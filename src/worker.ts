@@ -10,6 +10,42 @@ const KEY_FILE = join(SKILL_DIR, 'key.txt')
 const MODE_FILE = join(SKILL_DIR, 'mode.txt')
 
 type Mode = 'auto' | 'turbo' | 'balance' | 'eco'
+type ConfigMode = Exclude<Mode, 'auto'>
+type ModeEffort = 'low' | 'medium' | 'high' | 'xhigh'
+interface ModeConfig { effort: ModeEffort; workers: number; subagents: boolean }
+type ModeConfigs = Record<ConfigMode, ModeConfig>
+
+const DEFAULT_MODE_CONFIGS: ModeConfigs = {
+  turbo: { effort: 'high', workers: 4, subagents: true },
+  balance: { effort: 'medium', workers: 2, subagents: true },
+  eco: { effort: 'low', workers: 1, subagents: false }
+}
+
+function sanitizeConfig(m: ConfigMode, raw: unknown): ModeConfig {
+  const d = DEFAULT_MODE_CONFIGS[m]
+  if (!raw || typeof raw !== 'object') return { ...d }
+  const o = raw as Partial<ModeConfig>
+  const effort: ModeEffort =
+    o.effort === 'low' || o.effort === 'medium' || o.effort === 'high' || o.effort === 'xhigh' ? o.effort : d.effort
+  const workers = typeof o.workers === 'number' && isFinite(o.workers) ? Math.min(4, Math.max(1, Math.round(o.workers))) : d.workers
+  const subagents = typeof o.subagents === 'boolean' ? o.subagents : d.subagents
+  return { effort, workers, subagents }
+}
+
+async function loadModeConfigs(orca: OrcaWorkerApi): Promise<ModeConfigs> {
+  let stored: Record<string, unknown> = {}
+  try {
+    const t = await orca.storage.get('modeConfigs')
+    if (t && typeof t === 'object') stored = t as Record<string, unknown>
+  } catch {
+    /* ignore */
+  }
+  return {
+    turbo: sanitizeConfig('turbo', stored.turbo),
+    balance: sanitizeConfig('balance', stored.balance),
+    eco: sanitizeConfig('eco', stored.eco)
+  }
+}
 
 async function loadKey(orca: OrcaWorkerApi): Promise<{ key: string | null; fromTxt: boolean }> {
   const env = process.env.OPENROUTER_API_KEY
@@ -88,6 +124,14 @@ export default function activate(orca: OrcaWorkerApi): void {
     return { ok: true, ...t }
   })
 
+  orca.panels.handle('quota.setModeConfig', async ({ mode, config }) => {
+    const clean = sanitizeConfig(mode, config)
+    const all = await loadModeConfigs(orca)
+    all[mode] = clean
+    await orca.storage.set('modeConfigs', all)
+    return { ok: true, mode, config: clean }
+  })
+
   orca.panels.handle('quota.setKey', async ({ key }) => {
     const k = key.trim()
     if (k) await orca.storage.set('orKey', k)
@@ -99,8 +143,9 @@ export default function activate(orca: OrcaWorkerApi): void {
     const now = Date.now()
     const manualMode = loadMode()
     const thresholds = await loadThresholds(orca)
+    const modeConfigs = await loadModeConfigs(orca)
     const { key, fromTxt } = await loadKey(orca)
-    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key, keyFromTxt: fromTxt }
+    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key, keyFromTxt: fromTxt, modeConfigs }
     if (!key) {
       return { ok: false, error: 'Ключ OpenRouter не задан (вставьте в плагине или key.txt)', used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, ...base, effectiveMode: effective(0, manualMode, thresholds) }
     }

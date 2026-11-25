@@ -133,10 +133,64 @@
     background: var(--orca-popover); color: var(--orca-popover-foreground); border: 1px solid var(--orca-border);
     border-radius: 6px; padding: 4px 7px; font-size: 11px; white-space: nowrap; z-index: 60; box-shadow: 0 4px 14px rgba(0,0,0,.3);
   }
+
+  /* custom HTML/CSS tooltip (200ms delay), positioned via JS to avoid clipping */
+  .tip-pop {
+    display: none; position: fixed; z-index: 200; max-width: 240px; width: max-content;
+    background: var(--orca-popover); color: var(--orca-popover-foreground);
+    border: 1px solid var(--orca-border); border-radius: 8px; padding: 7px 9px;
+    font-size: 11.5px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    pointer-events: none; opacity: 0; transition: opacity .1s;
+  }
+  .tip-pop.show { opacity: 1; }
+  .tip-pop b { display: block; font-size: 11px; margin-bottom: 3px; }
+  .tip-pop .tip-dim { color: var(--orca-muted-foreground); }
+
+  /* thresholds: name+summary left, controls right */
+  .thr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .thr-row .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .thr-left { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .thr-name { font-size: 12.5px; display: flex; align-items: center; gap: 5px; }
+  .thr-sum { font-size: 10.5px; color: var(--orca-muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info {
+    width: 13px; height: 13px; line-height: 12px; text-align: center; border-radius: 50%;
+    border: 1px solid var(--orca-border); color: var(--orca-muted-foreground);
+    font-size: 9px; font-style: normal; cursor: help; flex: 0 0 auto;
+  }
+  .thr-ctl { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+  .thr-row .range { color: var(--orca-muted-foreground); font-size: 12px; }
+  .thr-row input {
+    width: 54px; flex: 0 0 auto; text-align: right; padding: 3px 5px;
+    background: var(--orca-input); color: var(--orca-foreground);
+    border: 1px solid var(--orca-border); border-radius: 6px; font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .thr-row input.invalid { border-color: var(--eco); box-shadow: 0 0 0 1px var(--eco) inset; }
+  .gear {
+    flex: 0 0 auto; width: 22px; height: 22px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--orca-border); background: var(--orca-card); color: var(--orca-muted-foreground);
+    font-size: 12px; line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+    transition: background .12s, color .12s;
+  }
+  .gear:hover { background: var(--orca-accent); color: var(--orca-foreground); }
+  .gear.on { background: color-mix(in srgb, var(--balance) 22%, transparent); border-color: var(--balance); color: var(--balance); }
+
+  .cfg-panel { display: none; margin: 2px 0 6px 17px; padding: 8px 10px; border: 1px solid var(--orca-border); border-radius: 8px; background: rgba(255,255,255,.02); }
+  .cfg-panel.open { display: block; }
+  .cfg-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; font-size: 12px; }
+  .cfg-grid label { color: var(--orca-muted-foreground); white-space: nowrap; }
+  .cfg-grid select {
+    width: 100%; min-width: 0; padding: 3px 6px; background: var(--orca-input); color: var(--orca-foreground);
+    border: 1px solid var(--orca-border); border-radius: 6px; font-size: 12px;
+  }
+  .cfg-chk { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; color: var(--orca-foreground); cursor: pointer; }
+  .cfg-chk input { accent-color: var(--balance); }
+  .cfg-note { margin-top: 6px; font-size: 10.5px; color: var(--orca-muted-foreground); line-height: 1.35; }
 </style>
 </head>
 <body>
   <div id="app"></div>
+  <div class="tip-pop" id="tipPop"></div>
   <script>
   (function () {
     'use strict';
@@ -160,9 +214,11 @@
     function boot(orca) {
     const COLORS = { turbo: '#10b981', balance: '#f59e0b', eco: '#f43f5e' };
     const LABEL = { turbo: 'ТУРБО', balance: 'БАЛАНС', eco: 'ЭКО', auto: 'Авто' };
+    const EFFORTS = ['low', 'medium', 'high', 'xhigh'];
     let state = null;
     let popOpen = false;
     let accOpen = false;
+    let openCfg = null; // какой режим раскрыт в настройках (ConfigMode | null)
     let keyDraft = '';
     let savedTimer = null;
 
@@ -176,12 +232,32 @@
       return d.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
+    function modeSummary(m) {
+      const c = (state.modeConfigs && state.modeConfigs[m]) || { effort: '—', workers: '?', subagents: false };
+      return `effort ${c.effort} · ${c.workers} ворк. · ${c.subagents ? 'субагенты вкл' : 'без субагентов'}`;
+    }
+
+    function tipHtml(m) {
+      const cfg = (state.modeConfigs && state.modeConfigs[m]) || {};
+      const cond = m === 'turbo' ? `Активируется при остатке &gt; ${state.turboAbove} RPD`
+        : m === 'eco' ? `Активируется при остатке &lt; ${state.ecoBelow} RPD`
+        : m === 'balance' ? `Активируется при остатке ${state.ecoBelow}–${state.turboAbove} RPD`
+        : 'Авто: режим выбирается по порогам остатка';
+      const beh = m === 'turbo' ? 'Тяжёлые модели, до 4 воркеров параллельно — быстрый расход лимита.'
+        : m === 'eco' ? 'Лёгкие/free-модели, последовательно (1 воркер), минимум запросов.'
+        : m === 'balance' ? 'Средние модели, до 2 воркеров, умеренный темп.'
+        : 'Сам переключает ТУРБО/БАЛАНС/ЭКО по текущим порогам.';
+      const params = (m === 'auto') ? '' : `<br><span class="tip-dim">Конфиг: effort ${cfg.effort} · ${cfg.workers} ворк. · субагенты ${cfg.subagents ? 'вкл' : 'выкл'}</span>`;
+      return `<b>${LABEL[m]}</b>${cond}<br>${beh}${params}`;
+    }
+
     async function refresh(spin) {
       const btn = document.getElementById('refreshBtn');
       if (spin && btn) { btn.classList.add('spin'); btn.disabled = true; }
       try {
         state = await req('quota.get');
         if (state && !state._t) state._t = {};
+        if (state && !state.modeConfigs) state.modeConfigs = {};
         // init threshold drafts from server once
         if (!state._init) {
           state._draftTurbo = String(state.turboAbove);
@@ -195,7 +271,22 @@
       if (spin && btn) { btn.classList.remove('spin'); btn.disabled = false; }
     }
 
-    function modeZone() { return state ? state.effectiveMode : 'eco'; }
+    function cfgPanel(m) {
+      const c = (state.modeConfigs && state.modeConfigs[m]) || { effort: 'medium', workers: 2, subagents: false };
+      const opts = EFFORTS.map(e => `<option value="${e}"${c.effort === e ? ' selected' : ''}>${e}</option>`).join('');
+      const wopts = [1, 2, 3, 4].map(n => `<option value="${n}"${c.workers === n ? ' selected' : ''}>${n}</option>`).join('');
+      return `
+        <div class="cfg-panel ${openCfg === m ? 'open' : ''}" data-cfg-panel="${m}">
+          <div class="cfg-grid">
+            <label>Модели / effort</label>
+            <select data-cfg-field="effort" data-mode="${m}">${opts}</select>
+            <label>Воркеры (макс)</label>
+            <select data-cfg-field="workers" data-mode="${m}">${wopts}</select>
+            <label class="cfg-chk"><input type="checkbox" data-cfg-field="subagents" data-mode="${m}"${c.subagents ? ' checked' : ''}> разрешить субагентов</label>
+          </div>
+          <div class="cfg-note">Плагин хранит эти параметры как подсказку для агента/скилла. Реально effort/модели/воркеров задаёт агент (opencode2) при запуске — плагин их не переключает.</div>
+        </div>`;
+    }
 
     function render() {
       const app = document.getElementById('app');
@@ -216,7 +307,7 @@
           </div>
           <div class="popover ${popOpen ? '' : 'hidden'}" id="pop">
             ${['auto','turbo','balance','eco'].map(m => `
-              <div class="pop-item" data-mode="${m}">
+              <div class="pop-item" data-mode="${m}" data-tip-mode="${m}">
                 <span class="dot" style="background:${m==='auto' ? 'var(--orca-muted-foreground)' : COLORS[m]}"></span>
                 <span>${m==='auto' ? 'Авто (по порогам)' : LABEL[m]}</span>
                 ${(q.manualMode===m) ? '<span class="check">✓</span>' : ''}
@@ -259,23 +350,50 @@
         </div>
 
         <div class="sec-title">Пороги режимов</div>
+
         <div class="thr-row">
           <span class="dot" style="background:${COLORS.turbo}"></span>
-          <span class="name">ТУРБО</span>
-          <span class="range">&gt;</span>
-          <input id="inTurbo" class="tnum" inputmode="numeric" value="${q._draftTurbo}" />
+          <div class="thr-left">
+            <span class="thr-name">ТУРБО <i class="info" data-tip-mode="turbo">i</i></span>
+            <span class="thr-sum">${modeSummary('turbo')}</span>
+          </div>
+          <div class="thr-ctl">
+            <span class="range">&gt;</span>
+            <input id="inTurbo" class="tnum" inputmode="numeric" value="${q._draftTurbo}" />
+            <button class="gear ${openCfg==='turbo'?'on':''}" data-cfg="turbo" title="Настройки ТУРБО">⚙</button>
+          </div>
         </div>
+        ${cfgPanel('turbo')}
+
         <div class="thr-row">
           <span class="dot" style="background:${COLORS.balance}"></span>
-          <span class="name">БАЛАНС</span>
-          <span class="range tnum" id="balanceRange">${q._draftEco} – ${q._draftTurbo}</span>
+          <div class="thr-left">
+            <span class="thr-name">БАЛАНС <i class="info" data-tip-mode="balance">i</i></span>
+            <span class="thr-sum">${modeSummary('balance')}</span>
+          </div>
+          <div class="thr-ctl">
+            <input id="inBalMin" class="tnum" inputmode="numeric" value="${q._draftEco}" title="Мин. остаток БАЛАНС" />
+            <span class="range">–</span>
+            <input id="inBalMax" class="tnum" inputmode="numeric" value="${q._draftTurbo}" title="Макс. остаток БАЛАНС" />
+            <button class="gear ${openCfg==='balance'?'on':''}" data-cfg="balance" title="Настройки БАЛАНС">⚙</button>
+          </div>
         </div>
+        ${cfgPanel('balance')}
+
         <div class="thr-row">
           <span class="dot" style="background:${COLORS.eco}"></span>
-          <span class="name">ЭКО</span>
-          <span class="range">&lt;</span>
-          <input id="inEco" class="tnum" inputmode="numeric" value="${q._draftEco}" />
+          <div class="thr-left">
+            <span class="thr-name">ЭКО <i class="info" data-tip-mode="eco">i</i></span>
+            <span class="thr-sum">${modeSummary('eco')}</span>
+          </div>
+          <div class="thr-ctl">
+            <span class="range">&lt;</span>
+            <input id="inEco" class="tnum" inputmode="numeric" value="${q._draftEco}" />
+            <button class="gear ${openCfg==='eco'?'on':''}" data-cfg="eco" title="Настройки ЭКО">⚙</button>
+          </div>
         </div>
+        ${cfgPanel('eco')}
+
         <button class="save-btn" id="saveThr" disabled>Сохранить пороги</button>
 
         <div class="sep"></div>
@@ -299,27 +417,43 @@
       updateSaveState();
     }
 
+    // Пороги: min=ecoBelow (нижняя граница БАЛАНС/ЭКО), max=turboAbove (верхняя БАЛАНС/ТУРБО).
+    // Валидно: 0 <= min < max.
     function thresholdsValid() {
-      const t = parseInt(document.getElementById('inTurbo').value, 10);
-      const e = parseInt(document.getElementById('inEco').value, 10);
+      const t = parseInt(state._draftTurbo, 10);
+      const e = parseInt(state._draftEco, 10);
       const tBad = Number.isNaN(t) || t < 0;
-      const eBad = Number.isNaN(e) || e < 0 || (!Number.isNaN(t) && e >= t);
-      document.getElementById('inTurbo').classList.toggle('invalid', tBad);
-      document.getElementById('inEco').classList.toggle('invalid', eBad);
-      return !tBad && !eBad;
+      const eBad = Number.isNaN(e) || e < 0;
+      const orderBad = !tBad && !eBad && !(e < t); // нужно e < t
+      [['inTurbo', tBad || orderBad], ['inBalMax', tBad || orderBad],
+       ['inEco', eBad || orderBad], ['inBalMin', eBad || orderBad]].forEach(([id, bad]) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('invalid', !!bad);
+      });
+      return !tBad && !eBad && !orderBad;
     }
 
     function updateSaveState() {
-      const t = parseInt(document.getElementById('inTurbo').value, 10);
-      const e = parseInt(document.getElementById('inEco').value, 10);
+      const t = parseInt(state._draftTurbo, 10);
+      const e = parseInt(state._draftEco, 10);
       const valid = thresholdsValid();
       const dirty = String(t) !== String(state.turboAbove) || String(e) !== String(state.ecoBelow);
       const btn = document.getElementById('saveThr');
-      const balanceEl = document.getElementById('balanceRange');
-      if (!Number.isNaN(t) && !Number.isNaN(e)) balanceEl.textContent = `${e} – ${t}`;
+      if (!btn) return;
       btn.disabled = !(valid && dirty);
       btn.classList.remove('saved');
       btn.textContent = 'Сохранить пороги';
+    }
+
+    function syncThresholdInputs(source) {
+      // source: 'turbo' | 'eco' — зеркалим парные инпуты БАЛАНС
+      const t = document.getElementById('inTurbo');
+      const e = document.getElementById('inEco');
+      const bMin = document.getElementById('inBalMin');
+      const bMax = document.getElementById('inBalMax');
+      if (source === 'turbo') { if (bMax) bMax.value = state._draftTurbo; }
+      else { if (bMin) bMin.value = state._draftEco; }
+      updateSaveState();
     }
 
     function bind() {
@@ -334,6 +468,7 @@
         el.onclick = async (ev) => {
           ev.stopPropagation();
           popOpen = false;
+          hideTip();
           await req('quota.setMode', { mode: el.dataset.mode });
           await refresh(false);
         };
@@ -350,21 +485,54 @@
         }
       });
 
+      // two-way синхронизация порогов
       const inT = document.getElementById('inTurbo');
       const inE = document.getElementById('inEco');
-      inT.oninput = () => { state._draftTurbo = inT.value; updateSaveState(); };
-      inE.oninput = () => { state._draftEco = inE.value; updateSaveState(); };
+      const bMin = document.getElementById('inBalMin');
+      const bMax = document.getElementById('inBalMax');
+      inT.oninput = () => { state._draftTurbo = inT.value; syncThresholdInputs('turbo'); };
+      bMax.oninput = () => { state._draftTurbo = bMax.value; inT.value = bMax.value; updateSaveState(); };
+      inE.oninput = () => { state._draftEco = inE.value; syncThresholdInputs('eco'); };
+      bMin.oninput = () => { state._draftEco = bMin.value; inE.value = bMin.value; updateSaveState(); };
 
       document.getElementById('saveThr').onclick = async () => {
         if (!thresholdsValid()) return;
-        const t = parseInt(inT.value, 10), e = parseInt(inE.value, 10);
+        const t = parseInt(state._draftTurbo, 10), e = parseInt(state._draftEco, 10);
         await req('quota.setThresholds', { turboAbove: t, ecoBelow: e });
         await refresh(false);
         const b = document.getElementById('saveThr');
-        b.classList.add('saved'); b.textContent = 'Сохранено ✓';
-        clearTimeout(savedTimer);
-        savedTimer = setTimeout(() => { if (b) { b.classList.remove('saved'); b.textContent = 'Сохранить пороги'; } }, 1600);
+        if (b) {
+          b.classList.add('saved'); b.textContent = 'Сохранено ✓';
+          clearTimeout(savedTimer);
+          savedTimer = setTimeout(() => { if (b) { b.classList.remove('saved'); b.textContent = 'Сохранить пороги'; } }, 1600);
+        }
       };
+
+      // gear — раскрыть/свернуть настройки режима
+      document.querySelectorAll('.gear').forEach(g => {
+        g.onclick = (ev) => {
+          ev.stopPropagation();
+          const m = g.dataset.cfg;
+          openCfg = openCfg === m ? null : m;
+          render();
+        };
+      });
+      // per-mode config поля — сохраняем сразу при изменении
+      document.querySelectorAll('[data-cfg-field]').forEach(el => {
+        const handler = async () => {
+          const m = el.dataset.mode;
+          const field = el.dataset.cfgField;
+          const cur = (state.modeConfigs && state.modeConfigs[m]) || { effort: 'medium', workers: 2, subagents: false };
+          const next = { effort: cur.effort, workers: cur.workers, subagents: cur.subagents };
+          if (field === 'subagents') next.subagents = !!el.checked;
+          else if (field === 'workers') next.workers = parseInt(el.value, 10);
+          else next.effort = el.value;
+          const res = await req('quota.setModeConfig', { mode: m, config: next });
+          if (state.modeConfigs) state.modeConfigs[m] = (res && res.config) || next;
+          render(); // обновить сводку/метку сразу (в т.ч. для активного режима)
+        };
+        el.onchange = handler;
+      });
 
       document.getElementById('accHead').onclick = () => { accOpen = !accOpen; render(); };
       document.getElementById('eyeBtn').onclick = (ev) => {
@@ -379,6 +547,40 @@
         keyDraft = '';
         await refresh(false);
       };
+
+      bindTooltips();
+    }
+
+    // Кастомные HTML/CSS тултипы с задержкой 200мс, позиционируются в пределах окна.
+    var tipEl = document.getElementById('tipPop');
+    var tipTimer = null;
+    function hideTip() {
+      if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
+      if (tipEl) tipEl.classList.remove('show');
+    }
+    function showTip(target) {
+      if (!tipEl) return;
+      const m = target.getAttribute('data-tip-mode');
+      if (!m || !state) return;
+      tipEl.innerHTML = tipHtml(m);
+      tipEl.style.display = 'block';
+      tipEl.classList.add('show');
+      const r = target.getBoundingClientRect();
+      const tr = tipEl.getBoundingClientRect();
+      const gap = 8, margin = 8;
+      let left = r.left + r.width / 2 - tr.width / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - tr.width - margin));
+      let top = r.top - tr.height - gap;
+      if (top < margin) top = r.bottom + gap; // не влезает сверху — показываем снизу
+      top = Math.max(margin, Math.min(top, window.innerHeight - tr.height - margin));
+      tipEl.style.left = left + 'px';
+      tipEl.style.top = top + 'px';
+    }
+    function bindTooltips() {
+      document.querySelectorAll('[data-tip-mode]').forEach(el => {
+        el.onmouseenter = () => { if (tipTimer) clearTimeout(tipTimer); tipTimer = setTimeout(() => showTip(el), 200); };
+        el.onmouseleave = hideTip;
+      });
     }
 
     orca.on('theme', () => { /* CSS vars update in place; nothing needed */ });
