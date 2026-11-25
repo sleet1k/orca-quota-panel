@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --turbo: #10b981;
+    --balance: #f59e0b;
+    --eco: #f43f5e;
+    --ok: #10b981;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--orca-background);
+    color: var(--orca-foreground);
+    font-family: var(--orca-font-sans);
+    font-size: 13px;
+    line-height: 1.35;
+    padding: 10px;
+    min-width: 260px;
+  }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .title { font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .icon-btn {
+    flex: 0 0 auto; width: 26px; height: 26px; border-radius: 7px;
+    border: 1px solid var(--orca-border); background: var(--orca-card);
+    color: var(--orca-card-foreground); cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 14px; line-height: 1;
+    transition: background .12s, transform .12s;
+  }
+  .icon-btn:hover { background: var(--orca-accent); }
+  .icon-btn:disabled { opacity: .6; cursor: default; }
+  .icon-btn.spin svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* mode pill */
+  .pill-wrap { position: relative; flex: 0 0 auto; }
+  .pill {
+    border: 1px solid transparent; cursor: pointer; font-weight: 600; font-size: 12px;
+    padding: 3px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 4px;
+    color: #fff; user-select: none; white-space: nowrap;
+  }
+  .pill .chev { font-size: 9px; opacity: .9; }
+  .pill.turbo { background: color-mix(in srgb, var(--turbo) 88%, black); }
+  .pill.balance { background: color-mix(in srgb, var(--balance) 88%, black); }
+  .pill.eco { background: color-mix(in srgb, var(--eco) 88%, black); }
+  .popover {
+    position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; min-width: 190px;
+    background: var(--orca-popover); color: var(--orca-popover-foreground);
+    border: 1px solid var(--orca-border); border-radius: 9px; padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  }
+  .popover.hidden { display: none; }
+  .pop-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+    cursor: pointer; font-size: 12.5px;
+  }
+  .pop-item:hover { background: var(--orca-accent); }
+  .pop-item .dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+  .pop-item .check { margin-left: auto; font-size: 11px; opacity: .9; }
+
+  .card {
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 8px; padding: 12px; margin-bottom: 12px;
+  }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .muted { color: var(--orca-muted-foreground); }
+  .sm { font-size: 12px; }
+  .semibold { font-weight: 600; }
+
+  .bar {
+    position: relative; height: 8px; border-radius: 999px; background: rgba(255,255,255,.08);
+    margin: 8px 0 4px; overflow: hidden;
+  }
+  .bar .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; border-radius: 999px; transition: width .3s, background .3s; }
+  .bar .tick { position: absolute; top: -2px; bottom: -2px; width: 1px; background: rgba(255,255,255,.55); }
+
+  .kv { margin-top: 6px; }
+  .kv .row { padding: 2px 0; }
+
+  /* thresholds */
+  .sec-title { font-size: 12px; font-weight: 600; margin: 2px 0 6px; }
+  .thr-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .thr-row .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .thr-row .name { flex: 1 1 auto; min-width: 0; font-size: 12.5px; }
+  .thr-row .range { color: var(--orca-muted-foreground); font-size: 12px; }
+  .thr-row input {
+    width: 64px; flex: 0 0 auto; text-align: right; padding: 3px 6px;
+    background: var(--orca-input); color: var(--orca-foreground);
+    border: 1px solid var(--orca-border); border-radius: 6px; font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+  }
+  .thr-row input.invalid { border-color: var(--eco); box-shadow: 0 0 0 1px var(--eco) inset; }
+  .save-btn {
+    margin-top: 8px; width: 100%; padding: 6px; border-radius: 7px; cursor: pointer;
+    border: 1px solid var(--orca-border); background: var(--orca-secondary); color: var(--orca-secondary-foreground);
+    font-size: 12.5px; font-weight: 500; transition: opacity .12s, background .12s;
+  }
+  .save-btn:disabled { opacity: .45; cursor: default; }
+  .save-btn:not(:disabled):hover { background: var(--orca-accent); }
+  .save-btn.saved { background: color-mix(in srgb, var(--ok) 22%, transparent); border-color: var(--ok); color: var(--ok); }
+
+  /* key accordion */
+  .acc { border: 1px solid var(--orca-border); border-radius: 8px; overflow: hidden; }
+  .acc-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer;
+    background: rgba(255,255,255,.02); font-size: 12.5px; user-select: none;
+  }
+  .acc-head .chev { margin-left: auto; transition: transform .15s; font-size: 10px; }
+  .acc.open .acc-head .chev { transform: rotate(90deg); }
+  .acc-body { display: none; padding: 10px; border-top: 1px solid var(--orca-border); }
+  .acc.open .acc-body { display: block; }
+  .key-status { font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--orca-muted); color: var(--orca-muted-foreground); }
+  .key-status.set { background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok); }
+  .key-input-wrap { display: flex; gap: 6px; align-items: center; }
+  .key-input-wrap input {
+    flex: 1 1 auto; min-width: 0; padding: 6px 8px; background: var(--orca-input);
+    color: var(--orca-foreground); border: 1px solid var(--orca-border); border-radius: 6px; font-size: 12.5px;
+  }
+  .full-btn { margin-top: 8px; width: 100%; padding: 6px; border-radius: 7px; cursor: pointer; border: 1px solid var(--orca-border); background: var(--orca-secondary); color: var(--orca-secondary-foreground); font-size: 12.5px; }
+  .full-btn:hover { background: var(--orca-accent); }
+
+  .err { color: var(--eco); font-size: 12px; margin: 8px 0; }
+  .sep { height: 1px; background: var(--orca-border); margin: 12px 0; }
+  .tooltip { position: relative; }
+  .tooltip:hover::after {
+    content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: var(--orca-popover); color: var(--orca-popover-foreground); border: 1px solid var(--orca-border);
+    border-radius: 6px; padding: 4px 7px; font-size: 11px; white-space: nowrap; z-index: 60; box-shadow: 0 4px 14px rgba(0,0,0,.3);
+  }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const orca = window.orca;
+    const COLORS = { turbo: '#10b981', balance: '#f59e0b', eco: '#f43f5e' };
+    const LABEL = { turbo: 'ТУРБО', balance: 'БАЛАНС', eco: 'ЭКО', auto: 'Авто' };
+    let state = null;
+    let popOpen = false;
+    let accOpen = false;
+    let keyDraft = '';
+    let savedTimer = null;
+
+    async function req(name, input) {
+      return await orca.plugin.request(name, input || {});
+    }
+
+    function fmtResetLocal(resetAt) {
+      if (!resetAt) return '';
+      const d = new Date(resetAt);
+      return d.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function refresh(spin) {
+      const btn = document.getElementById('refreshBtn');
+      if (spin && btn) { btn.classList.add('spin'); btn.disabled = true; }
+      try {
+        state = await req('quota.get');
+        if (state && !state._t) state._t = {};
+        // init threshold drafts from server once
+        if (!state._init) {
+          state._draftTurbo = String(state.turboAbove);
+          state._draftEco = String(state.ecoBelow);
+          state._init = true;
+        }
+      } catch (e) {
+        state = state || { ok: false, error: String(e) };
+      }
+      render();
+      if (spin && btn) { btn.classList.remove('spin'); btn.disabled = false; }
+    }
+
+    function modeZone() { return state ? state.effectiveMode : 'eco'; }
+
+    function render() {
+      const app = document.getElementById('app');
+      const q = state;
+      if (!q) { app.innerHTML = '<div class="muted sm">Загрузка…</div>'; return; }
+      const mode = q.effectiveMode || 'eco';
+      const pct = q.limit > 0 ? Math.round((q.used / q.limit) * 100) : 0;
+      const usedFrac = q.limit > 0 ? (q.used / q.limit) : 0;
+      const turboTick = q.limit > 0 ? ((q.limit - q.turboAbove) / q.limit) * 100 : 100;
+      const ecoTick = q.limit > 0 ? ((q.limit - q.ecoBelow) / q.limit) * 100 : 0;
+      const creditsLow = q.creditsRemaining != null && q.creditsRemaining < 0.5;
+      const creditsColor = creditsLow ? (q.creditsRemaining < 0.1 ? COLORS.eco : COLORS.balance) : 'inherit';
+
+      const modePill = `
+        <div class="pill-wrap">
+          <div class="pill ${mode}" id="pill" title="Сменить режим">
+            <span>${LABEL[mode]}</span><span class="chev">▾</span>
+          </div>
+          <div class="popover ${popOpen ? '' : 'hidden'}" id="pop">
+            ${['auto','turbo','balance','eco'].map(m => `
+              <div class="pop-item" data-mode="${m}">
+                <span class="dot" style="background:${m==='auto' ? 'var(--orca-muted-foreground)' : COLORS[m]}"></span>
+                <span>${m==='auto' ? 'Авто (по порогам)' : LABEL[m]}</span>
+                ${(q.manualMode===m) ? '<span class="check">✓</span>' : ''}
+              </div>`).join('')}
+          </div>
+        </div>`;
+
+      const errBlock = (!q.ok && q.error) ? `<div class="err">${q.error}</div>` : '';
+
+      app.innerHTML = `
+        <div class="header">
+          <div class="title">OpenRouter Quota</div>
+          <button class="icon-btn" id="refreshBtn" title="Обновить">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
+          </button>
+          ${modePill}
+        </div>
+        ${errBlock}
+        <div class="card">
+          <div class="row">
+            <span class="sm muted">Осталось (rpd)</span>
+            <span class="sm semibold tnum">${q.remaining} / ${q.limit}</span>
+          </div>
+          <div class="bar">
+            <div class="fill" style="width:${Math.min(100,usedFrac*100)}%;background:${COLORS[mode]}"></div>
+            <div class="tick" style="left:${Math.max(0,Math.min(100,ecoTick))}%"></div>
+            <div class="tick" style="left:${Math.max(0,Math.min(100,turboTick))}%"></div>
+          </div>
+          <div class="row sm muted tnum">
+            <span>Использовано</span>
+            <span>${q.used} / ${q.limit} · ${pct}%</span>
+          </div>
+          <div class="kv">
+            <div class="row sm">
+              <span class="muted tooltip" data-tip="${fmtResetLocal(q.resetAt)}">Сброс</span>
+              <span class="tnum">${q.resetAt ? '+'+Math.max(0,Math.round((q.resetAt-Date.now())/3600000))+' ч' : '—'}</span>
+            </div>
+            ${q.creditsRemaining!=null ? `<div class="row sm"><span class="muted">Credits</span><span class="tnum" style="color:${creditsColor}">$${q.creditsRemaining.toFixed(2)}</span></div>` : ''}
+          </div>
+        </div>
+
+        <div class="sec-title">Пороги режимов</div>
+        <div class="thr-row">
+          <span class="dot" style="background:${COLORS.turbo}"></span>
+          <span class="name">ТУРБО</span>
+          <span class="range">&gt;</span>
+          <input id="inTurbo" class="tnum" inputmode="numeric" value="${q._draftTurbo}" />
+        </div>
+        <div class="thr-row">
+          <span class="dot" style="background:${COLORS.balance}"></span>
+          <span class="name">БАЛАНС</span>
+          <span class="range tnum" id="balanceRange">${q._draftEco} – ${q._draftTurbo}</span>
+        </div>
+        <div class="thr-row">
+          <span class="dot" style="background:${COLORS.eco}"></span>
+          <span class="name">ЭКО</span>
+          <span class="range">&lt;</span>
+          <input id="inEco" class="tnum" inputmode="numeric" value="${q._draftEco}" />
+        </div>
+        <button class="save-btn" id="saveThr" disabled>Сохранить пороги</button>
+
+        <div class="sep"></div>
+
+        <div class="acc ${accOpen?'open':''}" id="acc">
+          <div class="acc-head" id="accHead">
+            <span>API-ключ</span>
+            <span class="key-status ${q.hasKey?'set':''}">${q.hasKey ? (q.keyFromTxt?'● Задан (key.txt)':'● Задан') : '● Не задан'}</span>
+            <span class="chev">▶</span>
+          </div>
+          <div class="acc-body">
+            <div class="key-input-wrap">
+              <input id="keyInput" type="password" placeholder="sk-or-v1-…" value="${keyDraft}" />
+              <button class="icon-btn" id="eyeBtn" title="Показать/скрыть">👁</button>
+            </div>
+            <button class="full-btn" id="saveKey">Сохранить ключ</button>
+          </div>
+        </div>
+      `;
+      bind();
+      updateSaveState();
+    }
+
+    function thresholdsValid() {
+      const t = parseInt(document.getElementById('inTurbo').value, 10);
+      const e = parseInt(document.getElementById('inEco').value, 10);
+      const tBad = Number.isNaN(t) || t < 0;
+      const eBad = Number.isNaN(e) || e < 0 || (!Number.isNaN(t) && e >= t);
+      document.getElementById('inTurbo').classList.toggle('invalid', tBad);
+      document.getElementById('inEco').classList.toggle('invalid', eBad);
+      return !tBad && !eBad;
+    }
+
+    function updateSaveState() {
+      const t = parseInt(document.getElementById('inTurbo').value, 10);
+      const e = parseInt(document.getElementById('inEco').value, 10);
+      const valid = thresholdsValid();
+      const dirty = String(t) !== String(state.turboAbove) || String(e) !== String(state.ecoBelow);
+      const btn = document.getElementById('saveThr');
+      const balanceEl = document.getElementById('balanceRange');
+      if (!Number.isNaN(t) && !Number.isNaN(e)) balanceEl.textContent = `${e} – ${t}`;
+      btn.disabled = !(valid && dirty);
+      btn.classList.remove('saved');
+      btn.textContent = 'Сохранить пороги';
+    }
+
+    function bind() {
+      document.getElementById('refreshBtn').onclick = () => refresh(true);
+
+      document.getElementById('pill').onclick = (ev) => {
+        ev.stopPropagation();
+        popOpen = !popOpen;
+        document.getElementById('pop').classList.toggle('hidden', !popOpen);
+      };
+      document.querySelectorAll('.pop-item').forEach(el => {
+        el.onclick = async (ev) => {
+          ev.stopPropagation();
+          popOpen = false;
+          await req('quota.setMode', { mode: el.dataset.mode });
+          await refresh(false);
+        };
+      });
+      document.addEventListener('click', (ev) => {
+        if (popOpen && !ev.target.closest('.pill-wrap')) {
+          popOpen = false;
+          const p = document.getElementById('pop'); if (p) p.classList.add('hidden');
+        }
+      });
+      document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && popOpen) {
+          popOpen = false; const p = document.getElementById('pop'); if (p) p.classList.add('hidden');
+        }
+      });
+
+      const inT = document.getElementById('inTurbo');
+      const inE = document.getElementById('inEco');
+      inT.oninput = () => { state._draftTurbo = inT.value; updateSaveState(); };
+      inE.oninput = () => { state._draftEco = inE.value; updateSaveState(); };
+
+      document.getElementById('saveThr').onclick = async () => {
+        if (!thresholdsValid()) return;
+        const t = parseInt(inT.value, 10), e = parseInt(inE.value, 10);
+        await req('quota.setThresholds', { turboAbove: t, ecoBelow: e });
+        await refresh(false);
+        const b = document.getElementById('saveThr');
+        b.classList.add('saved'); b.textContent = 'Сохранено ✓';
+        clearTimeout(savedTimer);
+        savedTimer = setTimeout(() => { if (b) { b.classList.remove('saved'); b.textContent = 'Сохранить пороги'; } }, 1600);
+      };
+
+      document.getElementById('accHead').onclick = () => { accOpen = !accOpen; render(); };
+      document.getElementById('eyeBtn').onclick = (ev) => {
+        ev.stopPropagation();
+        const i = document.getElementById('keyInput');
+        i.type = i.type === 'password' ? 'text' : 'password';
+      };
+      const ki = document.getElementById('keyInput');
+      ki.oninput = () => { keyDraft = ki.value; };
+      document.getElementById('saveKey').onclick = async () => {
+        await req('quota.setKey', { key: keyDraft });
+        keyDraft = '';
+        await refresh(false);
+      };
+    }
+
+    orca.on('theme', () => { /* CSS vars update in place; nothing needed */ });
+    refresh(false);
+    setInterval(() => refresh(false), 60000);
+  </script>
+</body>
+</html>

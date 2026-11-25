@@ -2,7 +2,7 @@
   "manifestVersion": 2,
   "id": "quota-panel",
   "name": "Quota Panel",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Панель остатка бесплатного лимита OpenRouter (rpd, сброс 05:00 Астана) с режимами ТУРБО/БАЛАНС/ЭКО.",
   "engines": {
     "orca": ">=1.4.246"
@@ -16,8 +16,8 @@
         "id": "quota-panel",
         "title": "Quota Panel",
         "icon": "blocks",
-        "entry": "src/panel.tsx",
-        "ui": "components"
+        "entry": "src/panel.html",
+        "ui": "html"
       }
     ]
   },

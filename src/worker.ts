@@ -11,22 +11,22 @@ const MODE_FILE = join(SKILL_DIR, 'mode.txt')
 
 type Mode = 'auto' | 'turbo' | 'balance' | 'eco'
 
-async function loadKey(orca: OrcaWorkerApi): Promise<string | null> {
+async function loadKey(orca: OrcaWorkerApi): Promise<{ key: string | null; fromTxt: boolean }> {
   const env = process.env.OPENROUTER_API_KEY
-  if (env && env.trim()) return env.trim()
+  if (env && env.trim()) return { key: env.trim(), fromTxt: false }
   try {
     const stored = await orca.storage.get('orKey')
-    if (typeof stored === 'string' && stored.trim()) return stored.trim()
+    if (typeof stored === 'string' && stored.trim()) return { key: stored.trim(), fromTxt: false }
   } catch {
     /* ignore */
   }
   try {
     const k = readFileSync(KEY_FILE, 'utf-8').trim()
-    if (k) return k
+    if (k) return { key: k, fromTxt: true }
   } catch {
     /* ignore */
   }
-  return null
+  return { key: null, fromTxt: false }
 }
 
 function loadMode(): Mode {
@@ -99,8 +99,8 @@ export default function activate(orca: OrcaWorkerApi): void {
     const now = Date.now()
     const manualMode = loadMode()
     const thresholds = await loadThresholds(orca)
-    const key = await loadKey(orca)
-    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key }
+    const { key, fromTxt } = await loadKey(orca)
+    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key, keyFromTxt: fromTxt }
     if (!key) {
       return { ok: false, error: 'Ключ OpenRouter не задан (вставьте в плагине или key.txt)', used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, ...base, effectiveMode: effective(0, manualMode, thresholds) }
     }

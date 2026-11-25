@@ -22,6 +22,7 @@ declare module 'orca' {
         turboAbove: number
         ecoBelow: number
         hasKey: boolean
+        keyFromTxt: boolean
       }
     }
     /** Задать ручной режим (auto/turbo/balance/eco). */
