@@ -37,16 +37,29 @@
   .icon-btn.spin svg { animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* language switcher */
-  .lang-sw { display: inline-flex; flex: 0 0 auto; border: 1px solid var(--orca-border); border-radius: 7px; overflow: hidden; }
-  .lang-sw button {
-    border: none; background: var(--orca-card); color: var(--orca-muted-foreground);
-    font-size: 10.5px; font-weight: 600; padding: 3px 6px; cursor: pointer; line-height: 1.4;
-    transition: background .12s, color .12s;
+  /* language switcher (compact dropdown) */
+  .lang-wrap { position: relative; flex: 0 0 auto; }
+  .lang-btn {
+    border: 1px solid var(--orca-border); background: var(--orca-card); color: var(--orca-foreground);
+    font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 7px; cursor: pointer; line-height: 1.4;
+    display: inline-flex; align-items: center; gap: 3px; transition: background .12s;
   }
-  .lang-sw button + button { border-left: 1px solid var(--orca-border); }
-  .lang-sw button:hover { background: var(--orca-accent); color: var(--orca-foreground); }
-  .lang-sw button.on { background: var(--orca-accent); color: var(--orca-foreground); }
+  .lang-btn:hover { background: var(--orca-accent); }
+  .lang-btn .chev { font-size: 8px; opacity: .8; }
+  .lang-pop {
+    position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 150px;
+    background: var(--orca-popover); color: var(--orca-popover-foreground);
+    border: 1px solid var(--orca-border); border-radius: 9px; padding: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  }
+  .lang-pop.hidden { display: none; }
+  .lang-item {
+    display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
+    cursor: pointer; font-size: 12px;
+  }
+  .lang-item:hover { background: var(--orca-accent); }
+  .lang-item .lang-name { color: var(--orca-muted-foreground); font-size: 11px; }
+  .lang-item .check { margin-left: auto; font-size: 11px; opacity: .9; }
 
   /* mode pill */
   .pill-wrap { position: relative; flex: 0 0 auto; }
@@ -230,6 +243,7 @@
         used: 'Used',
         reset: 'Reset',
         credits: 'Credits',
+        hoursShort: 'h',
         thresholdsTitle: 'Mode thresholds',
         saveThresholds: 'Save thresholds',
         saved: 'Saved ✓',
@@ -272,6 +286,7 @@
         used: 'Использовано',
         reset: 'Сброс',
         credits: 'Credits',
+        hoursShort: 'ч',
         thresholdsTitle: 'Пороги режимов',
         saveThresholds: 'Сохранить пороги',
         saved: 'Сохранено ✓',
@@ -279,9 +294,9 @@
         cfgWorkers: 'Воркеры (макс)',
         cfgSubagents: 'разрешить субагентов',
         cfgNote: 'Плагин хранит эти параметры как метаданные/подсказку для агентов и скиллов Orca. Реальные effort/модели/воркеров задаёт агент при запуске — плагин их не переключает.',
-        summary: 'effort {e} · {w} ворк. · субаг {s}',
-        subOn: 'вкл',
-        subOff: 'выкл',
+        summary: 'effort {e} · {w} ворк. · {s}',
+        subOn: 'субагенты вкл',
+        subOff: 'без субагентов',
         keyTitle: 'API-ключ',
         keySet: '● Задан',
         keySetTxt: '● Задан (key.txt)',
@@ -314,6 +329,7 @@
         used: '已用',
         reset: '重置',
         credits: '额度',
+        hoursShort: 'h',
         thresholdsTitle: '模式阈值',
         saveThresholds: '保存阈值',
         saved: '已保存 ✓',
@@ -364,6 +380,7 @@
     let langTouched = false; // был ли ручной выбор (чтобы не перетирать автоопределение)
     let state = null;
     let popOpen = false;
+    let langOpen = false;
     let accOpen = false;
     let openCfg = null;
     let keyDraft = '';
@@ -460,9 +477,20 @@
       const creditsLow = q.creditsRemaining != null && q.creditsRemaining < 0.5;
       const creditsColor = creditsLow ? (q.creditsRemaining < 0.1 ? COLORS.eco : COLORS.balance) : 'inherit';
 
-      const langSw = '<div class="lang-sw" id="langSw">' + LANGS.map(function (lg) {
-        return '<button data-lang="' + lg + '" class="' + (lg === lang ? 'on' : '') + '">' + LANG_LABEL[lg] + '</button>';
-      }).join('') + '</div>';
+      const langSw = '' +
+        '<div class="lang-wrap">' +
+          '<button class="lang-btn" id="langBtn" title="' + L.changeMode + '">' + LANG_LABEL[lang] + ' <span class="chev">▾</span></button>' +
+          '<div class="lang-pop' + (langOpen ? '' : ' hidden') + '" id="langPop">' +
+            LANGS.map(function (lg) {
+              const names = { en: 'English', ru: 'Русский', zh: '简体中文' };
+              return '<div class="lang-item" data-lang="' + lg + '">' +
+                '<span>' + LANG_LABEL[lg] + '</span>' +
+                '<span class="lang-name">' + names[lg] + '</span>' +
+                (lg === lang ? '<span class="check">✓</span>' : '') +
+              '</div>';
+            }).join('') +
+          '</div>' +
+        '</div>';
 
       const modePill = '' +
         '<div class="pill-wrap">' +
@@ -511,7 +539,7 @@
           '<div class="kv">' +
             '<div class="row sm">' +
               '<span class="muted tooltip" data-tip="' + fmtResetLocal(q.resetAt) + '">' + L.reset + '</span>' +
-              '<span class="tnum">' + (q.resetAt ? '+' + Math.max(0, Math.round((q.resetAt - Date.now()) / 3600000)) + ' h' : '—') + '</span>' +
+              '<span class="tnum">' + (q.resetAt ? '+' + Math.max(0, Math.round((q.resetAt - Date.now()) / 3600000)) + ' ' + L.hoursShort : '—') + '</span>' +
             '</div>' +
             (q.creditsRemaining != null ? '<div class="row sm"><span class="muted">' + L.credits + '</span><span class="tnum" style="color:' + creditsColor + '">$' + q.creditsRemaining.toFixed(2) + '</span></div>' : '') +
           '</div>' +
@@ -625,12 +653,19 @@
     function bind() {
       document.getElementById('refreshBtn').onclick = function () { refresh(true); };
 
-      // language switcher — one click, persisted via worker
-      document.querySelectorAll('#langSw [data-lang]').forEach(function (b) {
+      // language switcher — compact dropdown, persisted via worker
+      document.getElementById('langBtn').onclick = function (ev) {
+        ev.stopPropagation();
+        langOpen = !langOpen;
+        const p = document.getElementById('langPop');
+        if (p) p.classList.toggle('hidden', !langOpen);
+      };
+      document.querySelectorAll('#langPop [data-lang]').forEach(function (b) {
         b.onclick = async function (ev) {
           ev.stopPropagation();
+          langOpen = false;
           const lg = b.dataset.lang;
-          if (lg === lang) return;
+          if (lg === lang) { render(); return; }
           langTouched = true;
           lang = lg;
           L = I18N[lg];
@@ -659,10 +694,17 @@
           popOpen = false;
           const p = document.getElementById('pop'); if (p) p.classList.add('hidden');
         }
+        if (langOpen && !ev.target.closest('.lang-wrap')) {
+          langOpen = false;
+          const lp = document.getElementById('langPop'); if (lp) lp.classList.add('hidden');
+        }
       });
       document.addEventListener('keydown', function (ev) {
         if (ev.key === 'Escape' && popOpen) {
           popOpen = false; const p = document.getElementById('pop'); if (p) p.classList.add('hidden');
+        }
+        if (ev.key === 'Escape' && langOpen) {
+          langOpen = false; const lp = document.getElementById('langPop'); if (lp) lp.classList.add('hidden');
         }
       });
 

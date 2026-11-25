@@ -25,7 +25,7 @@
 在 Orca 中：**设置 → 插件 → 添加插件 → 从 Git URL**，然后粘贴本仓库地址：
 
 ```
-http://192.168.10.23:3000/sleet1k/orca-quota-panel.git
+https://github.com/sleet1k/orca-quota-panel.git
 ```
 
 首次运行时 Orca 会请求授权（插件会运行一个小型 worker 并存储自己的数据），之后 **Quota Panel** 会

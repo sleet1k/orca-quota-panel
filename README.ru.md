@@ -29,7 +29,7 @@
 В Orca: **Настройки → Плагины → Добавить плагин → По Git URL**, затем вставьте URL репозитория:
 
 ```
-http://192.168.10.23:3000/sleet1k/orca-quota-panel.git
+https://github.com/sleet1k/orca-quota-panel.git
 ```
 
 При первом запуске Orca запросит подтверждение (плагин запускает небольшой worker и хранит свои

@@ -29,7 +29,7 @@ A right-sidebar panel for [Orca](https://orca.com) that keeps an eye on your fre
 In Orca: **Settings → Plugins → Add Plugin → From Git URL**, then paste this repository's URL:
 
 ```
-http://192.168.10.23:3000/sleet1k/orca-quota-panel.git
+https://github.com/sleet1k/orca-quota-panel.git
 ```
 
 Orca asks for approval the first time (the plugin runs a small worker and stores its own data), then
