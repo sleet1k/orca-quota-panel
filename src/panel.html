@@ -11,9 +11,8 @@
     --ok: #10b981;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; }
+  html, body { margin: 0; padding: 0; min-height: 100vh; background: transparent; }
   body {
-    background: var(--orca-background);
     color: var(--orca-foreground);
     font-family: var(--orca-font-sans);
     font-size: 13px;
@@ -139,7 +138,26 @@
 <body>
   <div id="app"></div>
   <script>
-    const orca = window.orca;
+  (function () {
+    'use strict';
+
+    var app = document.getElementById('app');
+
+    function showFatal(msg) {
+      try {
+        app.innerHTML = '<div style="color:#f43f5e;font-size:12px;white-space:pre-wrap;padding:8px;">Ошибка панели: ' +
+          String(msg).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; }) + '</div>';
+      } catch (e) { /* ignore */ }
+    }
+    window.addEventListener('error', function (ev) {
+      showFatal((ev && ev.error && (ev.error.stack || ev.error.message)) || (ev && ev.message) || 'unknown error');
+    });
+    window.addEventListener('unhandledrejection', function (ev) {
+      var r = ev && ev.reason;
+      showFatal((r && (r.stack || r.message)) || r || 'unhandled rejection');
+    });
+
+    function boot(orca) {
     const COLORS = { turbo: '#10b981', balance: '#f59e0b', eco: '#f43f5e' };
     const LABEL = { turbo: 'ТУРБО', balance: 'БАЛАНС', eco: 'ЭКО', auto: 'Авто' };
     let state = null;
@@ -366,6 +384,22 @@
     orca.on('theme', () => { /* CSS vars update in place; nothing needed */ });
     refresh(false);
     setInterval(() => refresh(false), 60000);
+    }
+
+    // Wait until the host injects window.orca, then boot. The frame API is defined
+    // in <head> before this script, but poll defensively so a missing bridge never
+    // leaves a black screen.
+    var tries = 0;
+    (function waitForOrca() {
+      if (window.orca && window.orca.plugin && typeof window.orca.plugin.request === 'function') {
+        try { boot(window.orca); }
+        catch (e) { showFatal((e && (e.stack || e.message)) || e); }
+        return;
+      }
+      if (++tries > 200) { showFatal('orca bridge недоступен (window.orca не появился)'); return; }
+      setTimeout(waitForOrca, 25);
+    })();
+  })();
   </script>
 </body>
 </html>
