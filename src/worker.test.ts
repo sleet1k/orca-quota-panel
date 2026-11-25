@@ -2,13 +2,29 @@
 import { assert, mockHost, mountWorker, test } from 'orca/testing'
 import * as main from './worker'
 
-test('adds to the stored total and tells open panels', async () => {
-  const host = mockHost({ storage: { total: 2 } })
+test('stores thresholds and per-mode config, and reports them back', async () => {
+  const host = mockHost({ storage: {} })
   const worker = await mountWorker(main, { host })
-  assert.deepEqual(await worker.request('counter.get'), { total: 2 })
-  assert.deepEqual(await worker.request('counter.add', { by: 3 }), { total: 5 })
-  assert.deepEqual(worker.posts, [{ event: 'counter.changed', payload: { total: 5 } }])
-  assert.deepEqual(host.data().storage, { total: 5 })
+
+  // setThresholds persists to storage and echoes the values.
+  assert.deepEqual(await worker.request('quota.setThresholds', { turboAbove: 600, ecoBelow: 120 }), {
+    ok: true,
+    turboAbove: 600,
+    ecoBelow: 120
+  })
+
+  // setModeConfig persists one mode's config.
+  const cfg = await worker.request('quota.setModeConfig', {
+    mode: 'turbo',
+    config: { effort: 'xhigh', workers: 3, subagents: false }
+  })
+  assert.equal(cfg.ok, true)
+  assert.deepEqual(cfg.config, { effort: 'xhigh', workers: 3, subagents: false })
+
+  // The stored data survives in host storage.
+  const data = host.data().storage as Record<string, unknown>
+  assert.deepEqual(data.thresholds, { turboAbove: 600, ecoBelow: 120 })
+
   assert.deepEqual(worker.refusals, [])
   await worker.deactivate()
 })

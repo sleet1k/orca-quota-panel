@@ -4,5 +4,14 @@ import { defineCheck } from 'orca/testing'
 
 export default defineCheck({
   fresh: {},
-  counted: { storage: { total: 41 } }
+  configured: {
+    storage: {
+      thresholds: { turboAbove: 500, ecoBelow: 150 },
+      modeConfigs: {
+        turbo: { effort: 'high', workers: 4, subagents: true },
+        balance: { effort: 'medium', workers: 2, subagents: true },
+        eco: { effort: 'low', workers: 1, subagents: false }
+      }
+    }
+  }
 })

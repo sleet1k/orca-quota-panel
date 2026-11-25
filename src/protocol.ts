@@ -4,9 +4,10 @@ export {}
 export type QuotaMode = 'auto' | 'turbo' | 'balance' | 'eco'
 export type ConfigMode = Exclude<QuotaMode, 'auto'>
 export type ModeEffort = 'low' | 'medium' | 'high' | 'xhigh'
+export type Lang = 'en' | 'ru' | 'zh'
 
 /** Per-mode конфиг-метаданные. Плагин их ХРАНИТ и показывает, но НЕ применяет к агенту —
- * реально effort/моделей/воркеров задаёт агент (opencode2) через worker-start --effort.
+ * реальные effort/модели/воркеры задаёт агент Orca при запуске.
  * Скилл/агент могут читать эти значения как подсказку. */
 export interface ModeConfig {
   effort: ModeEffort
@@ -37,6 +38,7 @@ declare module 'orca' {
         hasKey: boolean
         keyFromTxt: boolean
         modeConfigs: ModeConfigs
+        lang: Lang | null // сохранённый язык вручную, иначе null (автоопределение)
       }
     }
     /** Задать ручной режим (auto/turbo/balance/eco). */
@@ -58,6 +60,11 @@ declare module 'orca' {
     'quota.setKey': {
       input: { key: string }
       output: { ok: boolean; hasKey: boolean }
+    }
+    /** Сохранить язык интерфейса вручную (en/ru/zh). */
+    'quota.setLang': {
+      input: { lang: Lang }
+      output: { ok: boolean; lang: Lang }
     }
   }
 }

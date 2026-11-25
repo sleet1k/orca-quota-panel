@@ -2,14 +2,37 @@
   "manifestVersion": 2,
   "id": "quota-panel",
   "name": "Quota Panel",
-  "version": "0.5.0",
-  "description": "Панель остатка бесплатного лимита OpenRouter (rpd, сброс 05:00 Астана) с режимами ТУРБО/БАЛАНС/ЭКО.",
+  "version": "1.0.0",
+  "description": "Monitor your free OpenRouter daily limit (requests per day, daily reset shown in your local time) with Turbo / Balance / Eco modes, editable thresholds and per-mode hints. Interface in English, Russian and Chinese.",
   "engines": {
     "orca": ">=1.4.246"
   },
   "execution": "trusted-worker",
   "pluginApi": 1,
   "main": "src/worker.ts",
+  "license": "MIT",
+  "repository": "https://gitea.local/sleet1k/orca-quota-panel",
+  "icon": "assets/icon.png",
+  "screenshots": [
+    {
+      "path": "assets/preview-en.png",
+      "alt": "OpenRouter Quota panel in English showing remaining requests, mode thresholds and per-mode settings",
+      "caption": "English",
+      "theme": "dark"
+    },
+    {
+      "path": "assets/preview-ru.png",
+      "alt": "OpenRouter Quota panel in Russian showing remaining requests, mode thresholds and per-mode settings",
+      "caption": "Русский",
+      "theme": "dark"
+    },
+    {
+      "path": "assets/preview-zh.png",
+      "alt": "OpenRouter Quota panel in Chinese showing remaining requests, mode thresholds and per-mode settings",
+      "caption": "简体中文",
+      "theme": "dark"
+    }
+  ],
   "contributes": {
     "panels": [
       {

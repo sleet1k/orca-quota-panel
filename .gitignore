@@ -1,2 +1,6 @@
 node_modules/
 .orca/
+key.txt
+*.tmp
+tmp-*.png
+.DS_Store

@@ -12,8 +12,19 @@ const MODE_FILE = join(SKILL_DIR, 'mode.txt')
 type Mode = 'auto' | 'turbo' | 'balance' | 'eco'
 type ConfigMode = Exclude<Mode, 'auto'>
 type ModeEffort = 'low' | 'medium' | 'high' | 'xhigh'
+type Lang = 'en' | 'ru' | 'zh'
 interface ModeConfig { effort: ModeEffort; workers: number; subagents: boolean }
 type ModeConfigs = Record<ConfigMode, ModeConfig>
+
+async function loadLang(orca: OrcaWorkerApi): Promise<Lang | null> {
+  try {
+    const v = await orca.storage.get('lang')
+    if (v === 'en' || v === 'ru' || v === 'zh') return v
+  } catch {
+    /* ignore */
+  }
+  return null
+}
 
 const DEFAULT_MODE_CONFIGS: ModeConfigs = {
   turbo: { effort: 'high', workers: 4, subagents: true },
@@ -139,13 +150,19 @@ export default function activate(orca: OrcaWorkerApi): void {
     return { ok: true, hasKey: !!k }
   })
 
+  orca.panels.handle('quota.setLang', async ({ lang }) => {
+    if (lang === 'en' || lang === 'ru' || lang === 'zh') await orca.storage.set('lang', lang)
+    return { ok: true, lang }
+  })
+
   orca.panels.handle('quota.get', async () => {
     const now = Date.now()
     const manualMode = loadMode()
     const thresholds = await loadThresholds(orca)
     const modeConfigs = await loadModeConfigs(orca)
+    const lang = await loadLang(orca)
     const { key, fromTxt } = await loadKey(orca)
-    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key, keyFromTxt: fromTxt, modeConfigs }
+    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key, keyFromTxt: fromTxt, modeConfigs, lang }
     if (!key) {
       return { ok: false, error: 'Ключ OpenRouter не задан (вставьте в плагине или key.txt)', used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, ...base, effectiveMode: effective(0, manualMode, thresholds) }
     }
