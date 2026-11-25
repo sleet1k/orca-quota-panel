@@ -5,7 +5,7 @@ export type QuotaMode = 'auto' | 'turbo' | 'balance' | 'eco'
 
 declare module 'orca' {
   interface PluginRequests {
-    /** Свежий статус лимита OpenRouter (rpd + credits + режим). */
+    /** Свежий статус лимита OpenRouter (rpd + credits + режим + пороги). */
     'quota.get': {
       output: {
         ok: boolean
@@ -19,12 +19,25 @@ declare module 'orca' {
         updatedAt: number // epoch ms
         manualMode: QuotaMode
         effectiveMode: Exclude<QuotaMode, 'auto'>
+        turboAbove: number
+        ecoBelow: number
+        hasKey: boolean
       }
     }
     /** Задать ручной режим (auto/turbo/balance/eco). */
     'quota.setMode': {
       input: { mode: QuotaMode }
       output: { ok: boolean; manualMode: QuotaMode }
+    }
+    /** Задать пороги режимов. */
+    'quota.setThresholds': {
+      input: { turboAbove: number; ecoBelow: number }
+      output: { ok: boolean; turboAbove: number; ecoBelow: number }
+    }
+    /** Задать/очистить API-ключ (пустой = очистить). */
+    'quota.setKey': {
+      input: { key: string }
+      output: { ok: boolean; hasKey: boolean }
     }
   }
 }

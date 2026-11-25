@@ -1,4 +1,5 @@
-// Worker: тянет /api/v1/key OpenRouter, хранит ручной режим в mode.txt (читает и скилл).
+// Worker: опрос /api/v1/key OpenRouter. Ключ и пороги хранит сам (storage:own),
+// с фолбэком на env и key.txt скилла. Делает плагин самодостаточным.
 import type { OrcaWorkerApi } from 'orca/worker'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -10,15 +11,22 @@ const MODE_FILE = join(SKILL_DIR, 'mode.txt')
 
 type Mode = 'auto' | 'turbo' | 'balance' | 'eco'
 
-function loadKey(): string | null {
+async function loadKey(orca: OrcaWorkerApi): Promise<string | null> {
   const env = process.env.OPENROUTER_API_KEY
   if (env && env.trim()) return env.trim()
   try {
-    const k = readFileSync(KEY_FILE, 'utf-8').trim()
-    return k || null
+    const stored = await orca.storage.get('orKey')
+    if (typeof stored === 'string' && stored.trim()) return stored.trim()
   } catch {
-    return null
+    /* ignore */
   }
+  try {
+    const k = readFileSync(KEY_FILE, 'utf-8').trim()
+    if (k) return k
+  } catch {
+    /* ignore */
+  }
+  return null
 }
 
 function loadMode(): Mode {
@@ -39,10 +47,25 @@ function saveMode(m: Mode): void {
   }
 }
 
-function effective(remaining: number, manual: Mode): Exclude<Mode, 'auto'> {
+async function loadThresholds(orca: OrcaWorkerApi): Promise<{ turboAbove: number; ecoBelow: number }> {
+  try {
+    const t = await orca.storage.get('thresholds')
+    if (t && typeof t === 'object') {
+      const o = t as { turboAbove?: number; ecoBelow?: number }
+      if (typeof o.turboAbove === 'number' && typeof o.ecoBelow === 'number') {
+        return { turboAbove: o.turboAbove, ecoBelow: o.ecoBelow }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return { turboAbove: 400, ecoBelow: 150 }
+}
+
+function effective(remaining: number, manual: Mode, t: { turboAbove: number; ecoBelow: number }): Exclude<Mode, 'auto'> {
   if (manual !== 'auto') return manual
-  if (remaining > 400) return 'turbo'
-  if (remaining >= 150) return 'balance'
+  if (remaining > t.turboAbove) return 'turbo'
+  if (remaining >= t.ecoBelow) return 'balance'
   return 'eco'
 }
 
@@ -55,24 +78,36 @@ function nextResetUtc(now: number): number {
 
 export default function activate(orca: OrcaWorkerApi): void {
   orca.panels.handle('quota.setMode', async ({ mode }) => {
-    const m: Mode = mode
-    saveMode(m)
-    return { ok: true, manualMode: m }
+    saveMode(mode)
+    return { ok: true, manualMode: mode }
+  })
+
+  orca.panels.handle('quota.setThresholds', async ({ turboAbove, ecoBelow }) => {
+    const t = { turboAbove: Math.max(0, Math.round(turboAbove)), ecoBelow: Math.max(0, Math.round(ecoBelow)) }
+    await orca.storage.set('thresholds', t)
+    return { ok: true, ...t }
+  })
+
+  orca.panels.handle('quota.setKey', async ({ key }) => {
+    const k = key.trim()
+    if (k) await orca.storage.set('orKey', k)
+    else await orca.storage.delete('orKey')
+    return { ok: true, hasKey: !!k }
   })
 
   orca.panels.handle('quota.get', async () => {
     const now = Date.now()
     const manualMode = loadMode()
-    const key = loadKey()
+    const thresholds = await loadThresholds(orca)
+    const key = await loadKey(orca)
+    const base = { resetAt: nextResetUtc(now), updatedAt: now, manualMode, turboAbove: thresholds.turboAbove, ecoBelow: thresholds.ecoBelow, hasKey: !!key }
     if (!key) {
-      return { ok: false, error: 'Ключ OpenRouter не найден (key.txt/env)', used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, resetAt: nextResetUtc(now), updatedAt: now, manualMode, effectiveMode: effective(0, manualMode) }
+      return { ok: false, error: 'Ключ OpenRouter не задан (вставьте в плагине или key.txt)', used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, ...base, effectiveMode: effective(0, manualMode, thresholds) }
     }
     try {
-      const res = await fetch('https://openrouter.ai/api/v1/key', {
-        headers: { Authorization: `Bearer ${key}` }
-      })
+      const res = await fetch('https://openrouter.ai/api/v1/key', { headers: { Authorization: `Bearer ${key}` } })
       if (!res.ok) {
-        return { ok: false, error: `OpenRouter ${res.status}`, used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, resetAt: nextResetUtc(now), updatedAt: now, manualMode, effectiveMode: effective(0, manualMode) }
+        return { ok: false, error: `OpenRouter ${res.status}`, used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, ...base, effectiveMode: effective(0, manualMode, thresholds) }
       }
       const j = await res.json()
       const d = j.data || {}
@@ -85,13 +120,11 @@ export default function activate(orca: OrcaWorkerApi): void {
         remaining,
         creditsRemaining: typeof d.limit_remaining === 'number' ? d.limit_remaining : null,
         isFreeTier: !!d.is_free_tier,
-        resetAt: nextResetUtc(now),
-        updatedAt: now,
-        manualMode,
-        effectiveMode: effective(remaining, manualMode)
+        ...base,
+        effectiveMode: effective(remaining, manualMode, thresholds)
       }
     } catch (e) {
-      return { ok: false, error: String(e), used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, resetAt: nextResetUtc(now), updatedAt: now, manualMode, effectiveMode: effective(0, manualMode) }
+      return { ok: false, error: String(e), used: 0, limit: 0, remaining: 0, creditsRemaining: null, isFreeTier: false, ...base, effectiveMode: effective(0, manualMode, thresholds) }
     }
   })
 }
