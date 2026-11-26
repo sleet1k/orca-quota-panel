@@ -56,15 +56,58 @@ declare module 'orca' {
       input: { mode: ConfigMode; config: ModeConfig }
       output: { ok: boolean; mode: ConfigMode; config: ModeConfig }
     }
-    /** Задать/очистить API-ключ (пустой = очистить). */
+    /** Задать/очистить API-ключ (пустой = очистить). pin — задать PIN для просмотра. */
     'quota.setKey': {
-      input: { key: string }
+      input: { key: string; pin?: string }
       output: { ok: boolean; hasKey: boolean }
+    }
+    /** Есть ли заданный PIN для просмотра ключа. */
+    'quota.hasPin': {
+      output: { ok: boolean; hasPin: boolean }
+    }
+    /** Задать/очистить PIN (только хеш, ключ не трогается). */
+    'quota.setPin': {
+      input: { pin: string }
+      output: { ok: boolean; error?: string }
+    }
+    /** Показать ключ по PIN. */
+    'quota.revealKey': {
+      input: { pin: string }
+      output: { ok: boolean; key?: string; error?: string }
+    }
+    /** Очистить логи. */
+    'quota.clearLogs': {
+      output: { ok: boolean }
     }
     /** Сохранить язык интерфейса вручную (en/ru/zh). */
     'quota.setLang': {
       input: { lang: Lang }
       output: { ok: boolean; lang: Lang }
+    }
+    /** Установить скилл из бандла (сохраняя user config/key/mode). */
+    'quota.installSkill': {
+      output: { ok: boolean; path?: string; error?: string }
+    }
+    /** Удалить установленный скилл + автоматизацию. */
+    'quota.uninstallSkill': {
+      output: { ok: boolean; error?: string }
+    }
+    /** Путь установленного скилла (или null). */
+    'quota.getInstalled': {
+      output: { ok: boolean; path: string | null }
+    }
+    /** Последние логи плагина (ring buffer). */
+    'quota.getLogs': {
+      output: { ok: boolean; lines: { ts: number; level: string; line: string }[] }
+    }
+    /** Прочитать config.json скилла. */
+    'quota.getSkillConfig': {
+      output: { ok: boolean; config?: string; error?: string }
+    }
+    /** Записать config.json + синхронизировать Orca-автоматизацию из cronMinutes. */
+    'quota.setSkillConfig': {
+      input: { config: string }
+      output: { ok: boolean; automationId?: string | null; automationError?: string | null; error?: string }
     }
   }
 }

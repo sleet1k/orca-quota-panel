@@ -24,7 +24,7 @@
   .header {
     display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
   }
-  .title { font-size: 14px; font-weight: 600; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title { font-size: 14px; font-weight: 600; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .icon-btn {
     flex: 0 0 auto; width: 26px; height: 26px; border-radius: 7px;
     border: 1px solid var(--orca-border); background: var(--orca-card);
@@ -33,6 +33,7 @@
     transition: background .12s, transform .12s;
   }
   .icon-btn:hover { background: var(--orca-accent); }
+  .icon-btn.on { background: color-mix(in srgb, var(--balance) 22%, transparent); border-color: var(--balance); color: var(--balance); }
   .icon-btn:disabled { opacity: .6; cursor: default; }
   .icon-btn.spin svg { animation: spin .8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -154,6 +155,12 @@
   }
   .cfg-chk { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; color: var(--orca-foreground); cursor: pointer; }
   .cfg-chk input { accent-color: var(--balance); }
+  .cfg-grid input {
+    width: 100%; min-width: 0; padding: 3px 6px;
+    background-color: var(--orca-input); color: var(--orca-foreground);
+    border: 1px solid var(--orca-border); border-radius: 6px; font-size: 12px;
+    color-scheme: dark;
+  }
   .cfg-note { margin-top: 6px; font-size: 10.5px; color: var(--orca-muted-foreground); line-height: 1.35; }
 
   .save-btn {
@@ -205,6 +212,59 @@
   .tip-pop.show { opacity: 1; }
   .tip-pop b { display: block; font-size: 11px; margin-bottom: 3px; }
   .tip-pop .tip-dim { color: var(--orca-muted-foreground); }
+
+  /* version badge in header */
+  .ver-badge {
+    flex: 0 0 auto; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 999px;
+    background: var(--orca-muted); color: var(--orca-muted-foreground); font-variant-numeric: tabular-nums;
+  }
+  /* compact green "installed" badge (non-clickable) */
+  .ok-badge {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--ok) 20%, transparent); color: var(--ok);
+  }
+  /* collapsible section (header click toggles body) */
+  .sect { border: 1px solid var(--orca-border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .sect-head {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer;
+    background: rgba(255,255,255,.02); font-size: 12.5px; font-weight: 600; user-select: none;
+  }
+  .sect-head:hover { background: rgba(255,255,255,.04); }
+  .sect-head .chev { margin-left: auto; transition: transform .15s; font-size: 10px; color: var(--orca-muted-foreground); }
+  .sect.open .sect-head .chev { transform: rotate(90deg); }
+  .sect-body { display: none; padding: 10px; border-top: 1px solid var(--orca-border); }
+  .sect.open .sect-body { display: block; }
+  .sect-head .head-right { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+  .sect-head .head-right .chev { margin-left: 0; }
+  /* 2x2 numeric grid for skill config */
+  .cfg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .cfg2 .fld { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .cfg2 .fld label { font-size: 11px; color: var(--orca-muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cfg2 .fld input, .cfg2 .fld select {
+    width: 100%; min-width: 0; padding: 4px 6px; background-color: var(--orca-input); color: var(--orca-foreground);
+    border: 1px solid var(--orca-border); border-radius: 6px; font-size: 12px; color-scheme: dark;
+  }
+  .cfg2 .fld.wide { grid-column: 1 / -1; }
+  /* log toolbar + autoscroll box */
+  .log-tools { display: inline-flex; gap: 4px; }
+  .log-tools button {
+    font-size: 10.5px; padding: 2px 7px; border-radius: 6px; cursor: pointer;
+    border: 1px solid var(--orca-border); background: var(--orca-card); color: var(--orca-muted-foreground);
+  }
+  .log-tools button:hover { background: var(--orca-accent); color: var(--orca-foreground); }
+  #logview { max-height: 160px; overflow: auto; background: var(--orca-input); border: 1px solid var(--orca-border);
+    border-radius: 6px; padding: 6px; font-size: 10.5px; line-height: 1.3; color: var(--orca-muted-foreground);
+    white-space: pre-wrap; word-break: break-all; margin-top: 8px; }
+  #logview .lg-err { color: #f87171; }
+  #logview .lg-warn { color: #fbbf24; }
+  #logview .lg-info { color: var(--orca-muted-foreground); }
+  /* settings modal */
+  .modal-bg { position: fixed; inset: 0; z-index: 120; background: rgba(0,0,0,.5);
+    display: flex; align-items: flex-start; justify-content: center; padding-top: 60px; }
+  .modal { width: 100%; max-width: 340px; background: var(--orca-popover); color: var(--orca-popover-foreground);
+    border: 1px solid var(--orca-border); border-radius: 10px; padding: 12px; box-shadow: 0 12px 40px rgba(0,0,0,.5); }
+  .modal-head { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .modal-head .icon-btn { margin-left: auto; }
 </style>
 </head>
 <body>
@@ -245,6 +305,7 @@
         credits: 'Credits',
         hoursShort: 'h',
         thresholdsTitle: 'Mode thresholds',
+        settingsTitle: 'Settings',
         saveThresholds: 'Save thresholds',
         saved: 'Saved ✓',
         cfgEffort: 'Models / effort',
@@ -256,10 +317,56 @@
         subOff: 'off',
         keyTitle: 'API key',
         keySet: '● Set',
-        keySetTxt: '● Set (key.txt)',
+        keySetTxt: '● Set',
         keyUnset: '● Not set',
         saveKey: 'Save key',
+        removeKey: 'Unlink key',
+        showKey: 'Show key',
+        copyKey: 'Copy',
+        pinSetTitle: 'Set a PIN to reveal the key',
+        pinPrompt: 'Enter PIN',
+        pinConfirm: 'Confirm PIN',
+        pinSave: 'Save PIN',
+        pinWrong: 'Wrong PIN',
+        cancel: 'Cancel',
+        pinRequired: 'Set a PIN first',
+        keyHidden: 'Key hidden',
         showHide: 'Show/hide',
+        installSkill: 'Install skill',
+        installOk: 'Skill installed ✓',
+        installFail: 'Install failed',
+        installPath: 'Installed to {path}',
+        uninstallSkill: 'Uninstall skill',
+        skillConfigTitle: 'Skill config (config.json)',
+        saveSkillConfig: 'Save config',
+        configSaved: 'Config saved ✓',
+        configFail: 'Save failed',
+        logsTitle: 'Logs',
+        cfCron: 'Period, min',
+        skillInfo: 'The quota-aware-planning skill checks your OpenRouter daily RPD balance on a cron schedule, estimates a safe burn rate, and dynamically adjusts the bot load so the limit is not exhausted early.',
+        cfgInfo: 'Saved to ~/.orca/bots/bot/skills/quota-aware-planning/config.json. A background worker reads these values every N minutes, compares the remaining quota with the work window, and caps parallel workers, RPM and reasoning effort.',
+        cfCronHint: 'How often the automation wakes the bot (cronMinutes). Creates an Orca automation.',
+        cfMaxW: 'Max workers',
+        cfMaxWHint: 'Upper cap on parallel workers the skill may spawn (maxWorkers).',
+        cfRpm: 'Requests/min per worker',
+        cfRpmHint: 'Assumed request rate of one worker (perWorkerRpm).',
+        cfCap: 'RPM cap',
+        cfCapHint: 'Account-wide requests-per-minute ceiling, free tier ~20 (rpmCap).',
+        cfEffort: 'Effort',
+        cfEffortHint: 'Default reasoning effort for the bot (defaultEffort).',
+        cfTz: 'Timezone',
+        cfTzHint: 'Timezone for the reset display; empty = local (timezone).',
+        cfTz: 'Timezone',
+        cfTzLocal: 'local',
+        cfWin: 'Work window, h',
+        cfWinHint: 'Hours to burn the remaining quota over. Empty = idle (workWindowHours).',
+        cfWinIdle: 'empty = idle',
+        copyLogs: 'Copy',
+        clearLogs: 'Clear',
+        installedBadge: 'Installed',
+        installTitle: 'Skill',
+        leftShort: 'left',
+        close: 'Close',
         balMin: 'Min balance',
         balMax: 'Max balance',
         gearTpl: '{m} settings',
@@ -267,12 +374,12 @@
         tipCondEco: 'Activates when remaining < {e} RPD',
         tipCondBalance: 'Activates when remaining {e}–{t} RPD',
         tipCondAuto: 'Auto: mode is chosen by the remaining thresholds',
-        tipBehTurbo: 'Heavy models, up to 4 workers in parallel — spends the limit fast.',
-        tipBehEco: 'Light/free models, sequential (1 worker), minimal requests.',
-        tipBehBalance: 'Medium models, up to 2 workers, moderate pace.',
+        tipBehTurbo: 'High reasoning effort (high), the most powerful/heavy models, maximum parallel subagents.',
+        tipBehEco: 'Low reasoning effort (low), light and fast models, subagents off — maximum quota savings.',
+        tipBehBalance: 'Medium reasoning effort (medium), balanced speed/quality models, moderate subagents.',
         tipBehAuto: 'Switches Turbo/Balance/Eco automatically by the current thresholds.',
         tipParams: 'Config: effort {e} · {w} wk · subagents {s}',
-        noKeyErr: 'OpenRouter key not set (paste it in the plugin or key.txt)',
+        noKeyErr: 'OpenRouter key not set (paste it in the plugin)',
         bridgeErr: 'orca bridge unavailable (window.orca did not appear)'
       },
       ru: {
@@ -288,6 +395,7 @@
         credits: 'Credits',
         hoursShort: 'ч',
         thresholdsTitle: 'Пороги режимов',
+        settingsTitle: 'Настройки',
         saveThresholds: 'Сохранить пороги',
         saved: 'Сохранено ✓',
         cfgEffort: 'Модели / effort',
@@ -299,10 +407,55 @@
         subOff: 'без субагентов',
         keyTitle: 'API-ключ',
         keySet: '● Задан',
-        keySetTxt: '● Задан (key.txt)',
+        keySetTxt: '● Задан',
         keyUnset: '● Не задан',
         saveKey: 'Сохранить ключ',
+        removeKey: 'Отвязать ключ',
+        showKey: 'Показать ключ',
+        copyKey: 'Копировать',
+        pinSetTitle: 'Задайте PIN для просмотра ключа',
+        pinPrompt: 'Введите PIN',
+        pinConfirm: 'Подтвердите PIN',
+        pinSave: 'Сохранить PIN',
+        pinWrong: 'Неверный PIN',
+        cancel: 'Отмена',
+        pinRequired: 'Сначала задайте PIN',
+        keyHidden: 'Ключ скрыт',
         showHide: 'Показать/скрыть',
+        installSkill: 'Установить скилл',
+        installOk: 'Скилл установлен ✓',
+        installFail: 'Не удалось установить',
+        installPath: 'Установлено в {path}',
+        uninstallSkill: 'Удалить скилл',
+        skillConfigTitle: 'Конфиг скилла (config.json)',
+        saveSkillConfig: 'Сохранить конфиг',
+        configSaved: 'Конфиг сохранён ✓',
+        configFail: 'Не удалось сохранить',
+        logsTitle: 'Логи',
+        cfCron: 'Период, мин',
+        skillInfo: 'Скилл quota-aware-planning по cron-расписанию проверяет остаток дневной квоты RPD OpenRouter, рассчитывает безопасную скорость расхода и динамически регулирует нагрузку бота, чтобы не сжечь лимит раньше времени.',
+        cfgInfo: 'Сохраняется в ~/.orca/bots/bot/skills/quota-aware-planning/config.json. Фоновый воркер каждые N минут читает эти параметры, сверяет остаток квоты с окном работы и ограничивает параллельных воркеров, RPM и усилие размышления.',
+        cfCronHint: 'Как часто автоматизация будит бота (cronMinutes). Создаёт автоматизацию Orca.',
+        cfMaxW: 'Макс. воркеров',
+        cfMaxWHint: 'Верхний предел параллельных воркеров, которые может запустить скилл (maxWorkers).',
+        cfRpm: 'Запросов/мин на воркер',
+        cfRpmHint: 'Предполагаемая частота запросов одного воркера (perWorkerRpm).',
+        cfCap: 'Лимит RPM',
+        cfCapHint: 'Общий потолок запросов в минуту на аккаунт, free ~20 (rpmCap).',
+        cfEffort: 'Усилие',
+        cfEffortHint: 'Усилие размышления бота по умолчанию (defaultEffort).',
+        cfTz: 'Часовой пояс',
+        cfTzHint: 'Часовой пояс для отображения сброса; пусто = местный (timezone).',
+        cfTzLocal: 'местный',
+        cfWin: 'Окно работы, ч',
+        cfWinHint: 'За сколько часов сжечь остаток квоты. Пусто = простой (workWindowHours).',
+        cfWinIdle: 'пусто = простой',
+        copyLogs: 'Копировать',
+        clearLogs: 'Очистить',
+        installedBadge: 'Установлен',
+        installTitle: 'Скилл',
+        leftShort: 'осталось',
+        close: 'Закрыть',
         balMin: 'Мин. остаток баланса',
         balMax: 'Макс. остаток баланса',
         gearTpl: 'Настройки: {m}',
@@ -310,12 +463,12 @@
         tipCondEco: 'Активируется при остатке < {e} RPD',
         tipCondBalance: 'Активируется при остатке {e}–{t} RPD',
         tipCondAuto: 'Авто: режим выбирается по порогам остатка',
-        tipBehTurbo: 'Тяжёлые модели, до 4 воркеров параллельно — быстрый расход лимита.',
-        tipBehEco: 'Лёгкие/free-модели, последовательно (1 воркер), минимум запросов.',
-        tipBehBalance: 'Средние модели, до 2 воркеров, умеренный темп.',
+        tipBehTurbo: 'Высокое усилие размышления (high), самые мощные/тяжёлые модели, максимум параллельных субагентов.',
+        tipBehEco: 'Минимальное усилие (low), лёгкие и быстрые модели, субагенты отключены — максимальная экономия квоты.',
+        tipBehBalance: 'Среднее усилие (medium), сбалансированные по скорости и качеству модели, умеренное число субагентов.',
         tipBehAuto: 'Сам переключает Турбо/Баланс/Эко по текущим порогам.',
         tipParams: 'Конфиг: effort {e} · {w} ворк. · субагенты {s}',
-        noKeyErr: 'Ключ OpenRouter не задан (вставьте в плагине или key.txt)',
+        noKeyErr: 'Ключ OpenRouter не задан (вставьте в плагине)',
         bridgeErr: 'orca bridge недоступен (window.orca не появился)'
       },
       zh: {
@@ -331,6 +484,7 @@
         credits: '额度',
         hoursShort: 'h',
         thresholdsTitle: '模式阈值',
+        settingsTitle: '设置',
         saveThresholds: '保存阈值',
         saved: '已保存 ✓',
         cfgEffort: '模型 / effort',
@@ -342,10 +496,55 @@
         subOff: '关',
         keyTitle: 'API 密钥',
         keySet: '● 已设置',
-        keySetTxt: '● 已设置 (key.txt)',
+        keySetTxt: '● 已设置',
         keyUnset: '● 未设置',
         saveKey: '保存密钥',
+        removeKey: '解绑密钥',
+        showKey: '显示密钥',
+        copyKey: '复制',
+        pinSetTitle: '设置查看密钥的 PIN',
+        pinPrompt: '输入 PIN',
+        pinConfirm: '确认 PIN',
+        pinSave: '保存 PIN',
+        pinWrong: 'PIN 错误',
+        cancel: '取消',
+        pinRequired: '请先设置 PIN',
+        keyHidden: '密钥已隐藏',
         showHide: '显示/隐藏',
+        installSkill: '安装技能',
+        installOk: '技能已安装 ✓',
+        installFail: '安装失败',
+        installPath: '已安装到 {path}',
+        uninstallSkill: '卸载技能',
+        skillConfigTitle: '技能配置 (config.json)',
+        saveSkillConfig: '保存配置',
+        configSaved: '配置已保存 ✓',
+        configFail: '保存失败',
+        logsTitle: '日志',
+        cfCron: '周期（分钟）',
+        skillInfo: 'quota-aware-planning 技能按计划（cron）检查 OpenRouter 每日 RPD 余额，估算安全消耗速率，并动态调整机器人负载，避免过早耗尽额度。',
+        cfgInfo: '保存到 ~/.orca/bots/bot/skills/quota-aware-planning/config.json。后台工作器每 N 分钟读取这些参数，将剩余额度与工作窗口比较，并限制并行工作器、RPM 和推理强度。',
+        cfCronHint: '自动化唤醒机器人的频率（cronMinutes）。会创建 Orca 自动化。',
+        cfMaxW: '最大工作器',
+        cfMaxWHint: '技能可启动的并行工作器上限（maxWorkers）。',
+        cfRpm: '每工作器每分钟请求',
+        cfRpmHint: '单个工作器的假定请求速率（perWorkerRpm）。',
+        cfCap: 'RPM 上限',
+        cfCapHint: '账户每分钟请求总上限，免费约 20（rpmCap）。',
+        cfEffort: '强度',
+        cfEffortHint: '机器人默认推理强度（defaultEffort）。',
+        cfTz: '时区',
+        cfTzHint: '重置显示的时区；留空 = 本地（timezone）。',
+        cfTzLocal: '本地',
+        cfWin: '工作窗口（小时）',
+        cfWinHint: '在多少小时内用完剩余配额。留空 = 空闲（workWindowHours）。',
+        cfWinIdle: '留空 = 空闲',
+        copyLogs: '复制',
+        clearLogs: '清除',
+        installedBadge: '已安装',
+        installTitle: '技能',
+        leftShort: '剩余',
+        close: '关闭',
         balMin: '均衡最小剩余',
         balMax: '均衡最大剩余',
         gearTpl: '{m} 设置',
@@ -353,12 +552,12 @@
         tipCondEco: '当剩余 < {e} RPD 时激活',
         tipCondBalance: '当剩余 {e}–{t} RPD 时激活',
         tipCondAuto: '自动：按剩余阈值选择模式',
-        tipBehTurbo: '重型模型，最多 4 个工作器并行——快速消耗额度。',
-        tipBehEco: '轻量/免费模型，顺序执行（1 个工作器），最少请求。',
-        tipBehBalance: '中型模型，最多 2 个工作器，适中节奏。',
+        tipBehTurbo: '高强度推理（high），最强/最重的模型，最多并行子代理。',
+        tipBehEco: '最低强度（low），轻量快速模型，子代理关闭——最大化节省额度。',
+        tipBehBalance: '中等强度（medium），速度与质量均衡的模型，适度子代理。',
         tipBehAuto: '按当前阈值自动切换极速/均衡/省流。',
         tipParams: '配置：effort {e} · {w} 工作器 · 子代理 {s}',
-        noKeyErr: '未设置 OpenRouter 密钥（请在插件中粘贴或写入 key.txt）',
+        noKeyErr: '未设置 OpenRouter 密钥（请在插件中粘贴）',
         bridgeErr: 'orca 桥接不可用（window.orca 未出现）'
       }
     };
@@ -382,8 +581,16 @@
     let popOpen = false;
     let langOpen = false;
     let accOpen = false;
+    let settingsOpen = false;
     let openCfg = null;
+    let sectOpen = { key: false, cfg: false, install: false, logs: false };
     let keyDraft = '';
+    let revealedKey = '';
+    let revealTimer = null;
+    let pinSetup = false;   // showing the "set PIN" form
+    let pinAsk = false;     // showing the "enter PIN to reveal" form
+    let pinErr = '';        // inline error text
+    let hasPin = false;     // whether a PIN is set (from worker)
     let savedTimer = null;
 
     function t() { return L; }
@@ -400,6 +607,14 @@
       if (!resetAt) return '';
       const d = new Date(resetAt);
       return d.toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function fmtCountdown(resetAt) {
+      if (!resetAt) return '—';
+      let s = Math.max(0, Math.floor((resetAt - Date.now()) / 1000));
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+      const pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      return pad(h) + ':' + pad(m) + ':' + pad(ss);
     }
 
     function modeSummary(m) {
@@ -422,6 +637,28 @@
       return '<b>' + modeLabel(m) + '</b>' + cond + '<br>' + beh + params;
     }
 
+    function copyText(txt, done) {
+      // Clipboard API is blocked in some webviews; fall back to execCommand.
+      var ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(function () { ok = true; if (done) done(true); }, function () { if (done) done(legacyCopy(txt)); });
+          return;
+        }
+      } catch (e) { /* fall through */ }
+      if (done) done(legacyCopy(txt));
+    }
+    function legacyCopy(txt) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    }
+
     async function refresh(spin) {
       const btn = document.getElementById('refreshBtn');
       if (spin && btn) { btn.classList.add('spin'); btn.disabled = true; }
@@ -429,6 +666,16 @@
         state = await req('quota.get');
         if (state && !state._t) state._t = {};
         if (state && !state.modeConfigs) state.modeConfigs = {};
+        try {
+          var sc = await req('quota.getSkillConfig');
+          if (sc && sc.ok) {
+            state._skillConfigText = sc.config;
+            try { state._skillCfg = JSON.parse(sc.config) || {}; } catch (e) { state._skillCfg = {}; }
+          }
+        } catch (e) { /* ignore */ }
+        try { var gi = await req('quota.getInstalled'); if (gi && gi.ok) state._installedPath = gi.path; } catch (e) { /* ignore */ }
+        try { var hp = await req('quota.hasPin'); if (hp && hp.ok) hasPin = hp.hasPin; } catch (e) { /* ignore */ }
+        try { var lg = await req('quota.getLogs'); if (lg && lg.ok) state._logs = lg.lines || []; } catch (e) { /* ignore */ }
         // Язык: ручной выбор из storage, иначе автоопределение по локали.
         if (!langTouched) {
           const stored = state && state.lang;
@@ -465,17 +712,49 @@
         '</div>';
     }
 
+    function skillCfgFields() {
+      const c = (state && state._skillCfg) || {};
+      const eff = c.defaultEffort || 'high';
+      const opts = ['low', 'medium', 'high', 'xhigh'].map(function (e) {
+        return '<option value="' + e + '"' + (eff === e ? ' selected' : '') + '>' + e + '</option>';
+      }).join('');
+      // Compact 2x2 numeric grid, then effort/timezone/workWindow on full-width rows.
+      return '' +
+        '<div class="cfg2">' +
+          '<div class="fld"><label data-tip="' + esc(L.cfCronHint) + '">' + L.cfCron + '</label><input id="cfgCron" type="number" min="1" value="' + (c.cronMinutes != null ? c.cronMinutes : 30) + '"></div>' +
+          '<div class="fld"><label data-tip="' + esc(L.cfMaxWHint) + '">' + L.cfMaxW + '</label><input id="cfgMaxW" type="number" min="1" max="8" value="' + (c.maxWorkers != null ? c.maxWorkers : 5) + '"></div>' +
+          '<div class="fld"><label data-tip="' + esc(L.cfRpmHint) + '">' + L.cfRpm + '</label><input id="cfgRpm" type="number" min="1" value="' + (c.perWorkerRpm != null ? c.perWorkerRpm : 4) + '"></div>' +
+          '<div class="fld"><label data-tip="' + esc(L.cfCapHint) + '">' + L.cfCap + '</label><input id="cfgCap" type="number" min="1" value="' + (c.rpmCap != null ? c.rpmCap : 20) + '"></div>' +
+          '<div class="fld"><label data-tip="' + esc(L.cfEffortHint) + '">' + L.cfEffort + '</label><select id="cfgEffort">' + opts + '</select></div>' +
+          '<div class="fld"><label data-tip="' + esc(L.cfTzHint) + '">' + L.cfTz + '</label><input id="cfgTz" value="' + (c.timezone || '') + '" placeholder="' + L.cfTzLocal + '"></div>' +
+          '<div class="fld wide"><label data-tip="' + esc(L.cfWinHint) + '">' + L.cfWin + '</label><input id="cfgWin" type="number" min="1" step="0.5" value="' + (c.workWindowHours != null ? c.workWindowHours : '') + '" placeholder="' + L.cfWinIdle + '"></div>' +
+        '</div>';
+    }
+
+    function logHtml(lines) {
+      if (!lines || !lines.length) return '';
+      return lines.map(function (l) {
+        var t = new Date(l.ts).toLocaleTimeString();
+        var line = String(l.line).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; });
+        var lvl = String(l.level || 'info').toLowerCase();
+        var cls = 'lg-info';
+        if (lvl === 'error' || /\b(error|failed|429|exception)\b/i.test(line)) cls = 'lg-err';
+        else if (lvl === 'warn' || /\b(warn|warning)\b/i.test(line)) cls = 'lg-warn';
+        return '<span class="' + cls + '">' + t + ' ' + lvl + ' ' + line + '</span>';
+      }).join('\n');
+    }
+
     function render() {
       const app = document.getElementById('app');
       const q = state;
       if (!q) { app.innerHTML = '<div class="muted sm">' + L.loading + '</div>'; return; }
       const mode = q.effectiveMode || 'eco';
-      const pct = q.limit > 0 ? Math.round((q.used / q.limit) * 100) : 0;
-      const usedFrac = q.limit > 0 ? (q.used / q.limit) : 0;
-      const turboTick = q.limit > 0 ? ((q.limit - q.turboAbove) / q.limit) * 100 : 100;
-      const ecoTick = q.limit > 0 ? ((q.limit - q.ecoBelow) / q.limit) * 100 : 0;
-      const creditsLow = q.creditsRemaining != null && q.creditsRemaining < 0.5;
-      const creditsColor = creditsLow ? (q.creditsRemaining < 0.1 ? COLORS.eco : COLORS.balance) : 'inherit';
+      const remainFrac = q.limit > 0 ? (q.remaining / q.limit) : 0;
+      const remainPct = Math.round(remainFrac * 100);
+      // Ticks are on the remaining scale: fraction of quota still available at each threshold.
+      const turboTick = q.limit > 0 ? (q.turboAbove / q.limit) * 100 : 100;
+      const ecoTick = q.limit > 0 ? (q.ecoBelow / q.limit) * 100 : 0;
+      const version = q.version ? 'v' + q.version : '';
 
       const langSw = '' +
         '<div class="lang-wrap">' +
@@ -509,12 +788,45 @@
         '</div>';
 
       const errBlock = (!q.ok && q.error) ? '<div class="err">' + q.error + '</div>' : '';
-
       const keyStatus = q.hasKey ? (q.keyFromTxt ? L.keySetTxt : L.keySet) : L.keyUnset;
+
+      // --- Settings modal (thresholds only) ---
+      const settingsModal = settingsOpen ? ('' +
+        '<div class="modal-bg" id="modalBg">' +
+          '<div class="modal">' +
+            '<div class="modal-head"><span>' + L.settingsTitle + '</span>' +
+              '<button class="icon-btn" id="modalClose" title="' + L.close + '">✕</button></div>' +
+            '<div class="thr-row">' +
+              '<span class="dot" style="background:' + COLORS.turbo + '"></span>' +
+              '<div class="thr-left"><span class="thr-name">' + modeLabel('turbo') + ' <i class="info" data-tip-mode="turbo">i</i></span></div>' +
+              '<div class="thr-ctl"><span class="range">&gt;</span>' +
+                '<input id="inTurbo" class="tnum" inputmode="numeric" value="' + q._draftTurbo + '" /></div>' +
+            '</div>' +
+            '<div class="thr-row">' +
+              '<span class="dot" style="background:' + COLORS.balance + '"></span>' +
+              '<div class="thr-left"><span class="thr-name">' + modeLabel('balance') + ' <i class="info" data-tip-mode="balance">i</i></span></div>' +
+              '<div class="thr-ctl">' +
+                '<input id="inBalMin" class="tnum" inputmode="numeric" value="' + q._draftEco + '" data-tip="' + esc(L.balMin) + '" />' +
+                '<span class="range">–</span>' +
+                '<input id="inBalMax" class="tnum" inputmode="numeric" value="' + q._draftTurbo + '" data-tip="' + esc(L.balMax) + '" />' +
+              '</div>' +
+            '</div>' +
+            '<div class="thr-row">' +
+              '<span class="dot" style="background:' + COLORS.eco + '"></span>' +
+              '<div class="thr-left"><span class="thr-name">' + modeLabel('eco') + ' <i class="info" data-tip-mode="eco">i</i></span></div>' +
+              '<div class="thr-ctl"><span class="range">&lt;</span>' +
+                '<input id="inEco" class="tnum" inputmode="numeric" value="' + q._draftEco + '" /></div>' +
+            '</div>' +
+            '<button class="save-btn" id="saveThr" disabled>' + L.saveThresholds + '</button>' +
+          '</div>' +
+        '</div>') : '';
 
       app.innerHTML = '' +
         '<div class="header">' +
           '<div class="title">OpenRouter Quota</div>' +
+          (version ? '<span class="ver-badge">' + version + '</span>' : '') +
+          '<span style="flex:1 1 auto"></span>' +
+          '<button class="icon-btn ' + (settingsOpen ? 'on' : '') + '" id="gearBtn" title="' + L.settingsTitle + '">⚙</button>' +
           langSw +
           '<button class="icon-btn" id="refreshBtn" title="' + L.refresh + '">' +
             '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>' +
@@ -528,89 +840,101 @@
             '<span class="sm semibold tnum">' + q.remaining + ' / ' + q.limit + '</span>' +
           '</div>' +
           '<div class="bar">' +
-            '<div class="fill" style="width:' + Math.min(100, usedFrac * 100) + '%;background:' + COLORS[mode] + '"></div>' +
+            '<div class="fill" style="width:' + Math.min(100, remainFrac * 100) + '%;background:' + COLORS[mode] + '"></div>' +
             '<div class="tick" style="left:' + Math.max(0, Math.min(100, ecoTick)) + '%"></div>' +
             '<div class="tick" style="left:' + Math.max(0, Math.min(100, turboTick)) + '%"></div>' +
           '</div>' +
           '<div class="row sm muted tnum">' +
             '<span>' + L.used + '</span>' +
-            '<span>' + q.used + ' / ' + q.limit + ' · ' + pct + '%</span>' +
+            '<span>' + q.used + ' / ' + q.limit + ' · ' + remainPct + '% ' + L.leftShort + '</span>' +
           '</div>' +
           '<div class="kv">' +
             '<div class="row sm">' +
-              '<span class="muted tooltip" data-tip="' + fmtResetLocal(q.resetAt) + '">' + L.reset + '</span>' +
-              '<span class="tnum">' + (q.resetAt ? '+' + Math.max(0, Math.round((q.resetAt - Date.now()) / 3600000)) + ' ' + L.hoursShort : '—') + '</span>' +
+              '<span class="muted" data-tip="' + fmtResetLocal(q.resetAt) + '">' + L.reset + '</span>' +
+              '<span class="tnum semibold" id="countdown">' + fmtCountdown(q.resetAt) + '</span>' +
             '</div>' +
-            (q.creditsRemaining != null ? '<div class="row sm"><span class="muted">' + L.credits + '</span><span class="tnum" style="color:' + creditsColor + '">$' + q.creditsRemaining.toFixed(2) + '</span></div>' : '') +
-          '</div>' +
-        '</div>' +
-
-        '<div class="sec-title">' + L.thresholdsTitle + '</div>' +
-
-        '<div class="thr-row">' +
-          '<span class="dot" style="background:' + COLORS.turbo + '"></span>' +
-          '<div class="thr-left">' +
-            '<span class="thr-name">' + modeLabel('turbo') + ' <i class="info" data-tip-mode="turbo">i</i></span>' +
-            '<span class="thr-sum">' + modeSummary('turbo') + '</span>' +
-          '</div>' +
-          '<div class="thr-ctl">' +
-            '<span class="range">&gt;</span>' +
-            '<input id="inTurbo" class="tnum" inputmode="numeric" value="' + q._draftTurbo + '" />' +
-            '<button class="gear ' + (openCfg === 'turbo' ? 'on' : '') + '" data-cfg="turbo" title="' + fmt(L.gearTpl, { m: modeLabel('turbo') }) + '">⚙</button>' +
-          '</div>' +
-        '</div>' +
-        cfgPanel('turbo') +
-
-        '<div class="thr-row">' +
-          '<span class="dot" style="background:' + COLORS.balance + '"></span>' +
-          '<div class="thr-left">' +
-            '<span class="thr-name">' + modeLabel('balance') + ' <i class="info" data-tip-mode="balance">i</i></span>' +
-            '<span class="thr-sum">' + modeSummary('balance') + '</span>' +
-          '</div>' +
-          '<div class="thr-ctl">' +
-            '<input id="inBalMin" class="tnum" inputmode="numeric" value="' + q._draftEco + '" title="' + L.balMin + '" />' +
-            '<span class="range">–</span>' +
-            '<input id="inBalMax" class="tnum" inputmode="numeric" value="' + q._draftTurbo + '" title="' + L.balMax + '" />' +
-            '<button class="gear ' + (openCfg === 'balance' ? 'on' : '') + '" data-cfg="balance" title="' + fmt(L.gearTpl, { m: modeLabel('balance') }) + '">⚙</button>' +
-          '</div>' +
-        '</div>' +
-        cfgPanel('balance') +
-
-        '<div class="thr-row">' +
-          '<span class="dot" style="background:' + COLORS.eco + '"></span>' +
-          '<div class="thr-left">' +
-            '<span class="thr-name">' + modeLabel('eco') + ' <i class="info" data-tip-mode="eco">i</i></span>' +
-            '<span class="thr-sum">' + modeSummary('eco') + '</span>' +
-          '</div>' +
-          '<div class="thr-ctl">' +
-            '<span class="range">&lt;</span>' +
-            '<input id="inEco" class="tnum" inputmode="numeric" value="' + q._draftEco + '" />' +
-            '<button class="gear ' + (openCfg === 'eco' ? 'on' : '') + '" data-cfg="eco" title="' + fmt(L.gearTpl, { m: modeLabel('eco') }) + '">⚙</button>' +
-          '</div>' +
-        '</div>' +
-        cfgPanel('eco') +
-
-        '<button class="save-btn" id="saveThr" disabled>' + L.saveThresholds + '</button>' +
-
-        '<div class="sep"></div>' +
-
-        '<div class="acc ' + (accOpen ? 'open' : '') + '" id="acc">' +
-          '<div class="acc-head" id="accHead">' +
-            '<span>' + L.keyTitle + '</span>' +
-            '<span class="key-status ' + (q.hasKey ? 'set' : '') + '">' + keyStatus + '</span>' +
-            '<span class="chev">▶</span>' +
-          '</div>' +
-          '<div class="acc-body">' +
-            '<div class="key-input-wrap">' +
-              '<input id="keyInput" type="password" placeholder="sk-or-v1-…" value="' + keyDraft + '" />' +
-              '<button class="icon-btn" id="eyeBtn" title="' + L.showHide + '">👁</button>' +
+            '<div class="bar" style="height:4px;margin:6px 0 2px">' +
+              '<div class="fill" style="width:' + (q.resetAt ? ((Date.now() % 86400000) / 86400000 * 100).toFixed(1) : 0) + '%;background:var(--orca-muted-foreground)"></div>' +
             '</div>' +
-            '<button class="full-btn" id="saveKey">' + L.saveKey + '</button>' +
           '</div>' +
         '</div>' +
+
+        // API key section (collapsible)
+        '<div class="sect ' + (sectOpen.key ? 'open' : '') + '" data-sect="key">' +
+          '<div class="sect-head" data-sect-head="key"><span>' + L.keyTitle + '</span>' +
+            '<span class="head-right">' + (q.hasKey ? '<span class="key-status set">' + keyStatus + '</span>' : '<span class="key-status">' + keyStatus + '</span>') +
+            '<span class="chev">▶</span></span></div>' +
+          '<div class="sect-body">' +
+            (q.hasKey
+              ? (revealedKey
+                  ? '<div class="key-input-wrap"><input id="keyReveal" type="text" readonly value="' + esc(revealedKey) + '" />' +
+                      '<button class="icon-btn" id="copyKey" title="' + L.copyKey + '">📋</button></div>' +
+                    '<div class="cfg-note">' + L.keyHidden + ' (30s)</div>'
+                  : pinSetup
+                    ? '<div class="key-input-wrap"><input id="pin1" type="password" placeholder="' + L.pinPrompt + '" /></div>' +
+                      '<div class="key-input-wrap" style="margin-top:6px"><input id="pin2" type="password" placeholder="' + L.pinConfirm + '" /></div>' +
+                      (pinErr ? '<div class="err">' + esc(pinErr) + '</div>' : '') +
+                      '<div style="display:flex;gap:6px;margin-top:6px">' +
+                        '<button class="full-btn" id="savePin" style="margin-top:0;flex:1">' + L.pinSave + '</button>' +
+                        '<button class="full-btn" id="cancelPin" style="margin-top:0;flex:1">' + L.cancel + '</button>' +
+                      '</div>'
+                    : pinAsk
+                      ? '<div class="key-input-wrap"><input id="pinAsk" type="password" placeholder="' + L.pinPrompt + '" /></div>' +
+                        (pinErr ? '<div class="err">' + esc(pinErr) + '</div>' : '') +
+                        '<div style="display:flex;gap:6px;margin-top:6px">' +
+                          '<button class="full-btn" id="submitPin" style="margin-top:0;flex:1">👁 ' + L.showKey + '</button>' +
+                          '<button class="full-btn" id="cancelPin" style="margin-top:0;flex:1">' + L.cancel + '</button>' +
+                        '</div>'
+                      : '<div style="display:flex;gap:6px">' +
+                          '<button class="full-btn" id="showKey" style="margin-top:0;flex:1">👁 ' + L.showKey + '</button>' +
+                          '<button class="full-btn" id="removeKey" style="margin-top:0;flex:1;color:var(--orca-destructive,#e06c6c)">' + L.removeKey + '</button>' +
+                        '</div>')
+              : '<div class="key-input-wrap">' +
+                  '<input id="keyInput" type="password" placeholder="sk-or-v1-…" value="' + keyDraft + '" />' +
+                '</div>' +
+                '<button class="full-btn" id="saveKey" style="margin-top:6px">' + L.saveKey + '</button>') +
+          '</div>' +
+        '</div>' +
+
+        // Skill config section (collapsible)
+        '<div class="sect ' + (sectOpen.cfg ? 'open' : '') + '" data-sect="cfg">' +
+          '<div class="sect-head" data-sect-head="cfg"><span>' + L.skillConfigTitle + ' <i class="info" data-tip="' + esc(L.cfgInfo) + '">i</i></span><span class="chev">▶</span></div>' +
+          '<div class="sect-body">' +
+            skillCfgFields() +
+            '<button class="save-btn" id="saveSkillConfig" disabled>' + L.saveSkillConfig + '</button>' +
+          '</div>' +
+        '</div>' +
+
+        // Install section (collapsible)
+        '<div class="sect ' + (sectOpen.install ? 'open' : '') + '" data-sect="install">' +
+          '<div class="sect-head" data-sect-head="install"><span>' + L.installTitle + ' <i class="info" data-tip="' + esc(L.skillInfo) + '">i</i></span>' +
+            '<span class="head-right">' + (q._installedPath ? '<span class="ok-badge">✓ ' + L.installedBadge + '</span>' : '') +
+            '<span class="chev">▶</span></span></div>' +
+          '<div class="sect-body">' +
+            (!q._installedPath ? '<button class="full-btn" id="installSkillBtn" style="margin-top:0">' + L.installSkill + '</button>' : '') +
+            '<div class="cfg-note" id="installStatus">' + (q._installedPath ? fmt(L.installPath, { path: q._installedPath }) : '') + '</div>' +
+            (q._installedPath ? '<button class="full-btn" id="uninstallSkillBtn" style="margin-top:6px;color:var(--orca-destructive,#e06c6c)">' + L.uninstallSkill + '</button>' : '') +
+          '</div>' +
+        '</div>' +
+
+        // Logs section (collapsible)
+        '<div class="sect ' + (sectOpen.logs ? 'open' : '') + '" data-sect="logs">' +
+          '<div class="sect-head" data-sect-head="logs"><span>' + L.logsTitle + '</span>' +
+            '<span class="head-right">' +
+              '<span class="log-tools"><button id="copyLogs">' + L.copyLogs + '</button><button id="clearLogs">' + L.clearLogs + '</button></span>' +
+              '<span class="chev">▶</span></span></div>' +
+          '<div class="sect-body">' +
+            '<pre id="logview">' + logHtml(q._logs) + '</pre>' +
+          '</div>' +
+        '</div>' +
+
+        settingsModal +
       '';
       bind();
       updateSaveState();
+      updateSkillCfgDirty();
+      // Autoscroll logs to bottom when the section is open.
+      if (sectOpen.logs) { var lv = document.getElementById('logview'); if (lv) lv.scrollTop = lv.scrollHeight; }
     }
 
     // Пороги: min=ecoBelow, max=turboAbove. Валидно: 0 <= min < max.
@@ -648,6 +972,41 @@
       if (source === 'turbo') { if (bMax) bMax.value = state._draftTurbo; }
       else { if (bMin) bMin.value = state._draftEco; }
       updateSaveState();
+    }
+
+    // Read the skill-config form into a plain object (numbers coerced).
+    function readSkillCfgForm() {
+      var g = function (id) { var el = document.getElementById(id); return el ? el.value : ''; };
+      var win = g('cfgWin').trim();
+      return {
+        cronMinutes: parseInt(g('cfgCron'), 10) || 30,
+        maxWorkers: parseInt(g('cfgMaxW'), 10) || 5,
+        perWorkerRpm: parseInt(g('cfgRpm'), 10) || 4,
+        rpmCap: parseInt(g('cfgCap'), 10) || 20,
+        defaultEffort: g('cfgEffort') || 'high',
+        timezone: g('cfgTz').trim() || null,
+        workWindowHours: win ? (parseFloat(win) || null) : null
+      };
+    }
+
+    // "Save config" is active only when the form differs from the saved config.
+    function updateSkillCfgDirty() {
+      var btn = document.getElementById('saveSkillConfig');
+      if (!btn || !state) return;
+      var saved = state._skillCfg || {};
+      var cur = readSkillCfgForm();
+      var dirty = JSON.stringify(cur) !== JSON.stringify({
+        cronMinutes: saved.cronMinutes != null ? saved.cronMinutes : 30,
+        maxWorkers: saved.maxWorkers != null ? saved.maxWorkers : 5,
+        perWorkerRpm: saved.perWorkerRpm != null ? saved.perWorkerRpm : 4,
+        rpmCap: saved.rpmCap != null ? saved.rpmCap : 20,
+        defaultEffort: saved.defaultEffort || 'high',
+        timezone: saved.timezone || null,
+        workWindowHours: saved.workWindowHours != null ? saved.workWindowHours : null
+      });
+      btn.disabled = !dirty;
+      btn.classList.remove('saved');
+      btn.textContent = L.saveSkillConfig;
     }
 
     function bind() {
@@ -708,17 +1067,18 @@
         }
       });
 
-      // two-way синхронизация порогов
+      // two-way синхронизация порогов (inputs exist only while the modal is open)
       const inT = document.getElementById('inTurbo');
       const inE = document.getElementById('inEco');
       const bMin = document.getElementById('inBalMin');
       const bMax = document.getElementById('inBalMax');
-      inT.oninput = function () { state._draftTurbo = inT.value; syncThresholdInputs('turbo'); };
-      bMax.oninput = function () { state._draftTurbo = bMax.value; inT.value = bMax.value; updateSaveState(); };
-      inE.oninput = function () { state._draftEco = inE.value; syncThresholdInputs('eco'); };
-      bMin.oninput = function () { state._draftEco = bMin.value; inE.value = bMin.value; updateSaveState(); };
+      if (inT) inT.oninput = function () { state._draftTurbo = inT.value; syncThresholdInputs('turbo'); };
+      if (bMax) bMax.oninput = function () { state._draftTurbo = bMax.value; if (inT) inT.value = bMax.value; updateSaveState(); };
+      if (inE) inE.oninput = function () { state._draftEco = inE.value; syncThresholdInputs('eco'); };
+      if (bMin) bMin.oninput = function () { state._draftEco = bMin.value; if (inE) inE.value = bMin.value; updateSaveState(); };
 
-      document.getElementById('saveThr').onclick = async function () {
+      var saveThrBtn = document.getElementById('saveThr');
+      if (saveThrBtn) saveThrBtn.onclick = async function () {
         if (!thresholdsValid()) return;
         const t = parseInt(state._draftTurbo, 10), e = parseInt(state._draftEco, 10);
         await req('quota.setThresholds', { turboAbove: t, ecoBelow: e });
@@ -731,60 +1091,175 @@
         }
       };
 
-      // gear — раскрыть/свернуть настройки режима
-      document.querySelectorAll('.gear').forEach(function (g) {
-        g.onclick = function (ev) {
-          ev.stopPropagation();
-          const m = g.dataset.cfg;
-          openCfg = openCfg === m ? null : m;
-          render();
-        };
-      });
-      // per-mode config поля — сохраняем сразу при изменении
-      document.querySelectorAll('[data-cfg-field]').forEach(function (el) {
-        el.onchange = async function () {
-          const m = el.dataset.mode;
-          const field = el.dataset.cfgField;
-          const cur = (state.modeConfigs && state.modeConfigs[m]) || { effort: 'medium', workers: 2, subagents: false };
-          const next = { effort: cur.effort, workers: cur.workers, subagents: cur.subagents };
-          if (field === 'subagents') next.subagents = !!el.checked;
-          else if (field === 'workers') next.workers = parseInt(el.value, 10);
-          else next.effort = el.value;
-          const res = await req('quota.setModeConfig', { mode: m, config: next });
-          if (state.modeConfigs) state.modeConfigs[m] = (res && res.config) || next;
+      // settings gear — open/close thresholds modal
+      var gearBtn = document.getElementById('gearBtn');
+      if (gearBtn) gearBtn.onclick = function () { settingsOpen = !settingsOpen; render(); };
+      var modalClose = document.getElementById('modalClose');
+      if (modalClose) modalClose.onclick = function () { settingsOpen = false; render(); };
+      var modalBg = document.getElementById('modalBg');
+      if (modalBg) modalBg.onclick = function (ev) { if (ev.target === modalBg) { settingsOpen = false; render(); } };
+
+      // collapsible sections
+      document.querySelectorAll('[data-sect-head]').forEach(function (h) {
+        h.onclick = function (ev) {
+          if (ev.target.closest('.log-tools')) return; // don't toggle when clicking Copy/Clear
+          var s = h.getAttribute('data-sect-head');
+          sectOpen[s] = !sectOpen[s];
+          if (s === 'key' && !sectOpen.key && revealedKey) {
+            revealedKey = ''; if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+          }
+          if (s === 'key' && !sectOpen.key) { pinAsk = false; pinSetup = false; pinErr = ''; }
           render();
         };
       });
 
-      document.getElementById('accHead').onclick = function () { accOpen = !accOpen; render(); };
-      document.getElementById('eyeBtn').onclick = function (ev) {
+      // logs: copy + clear
+      var cp = document.getElementById('copyLogs');
+      if (cp) cp.onclick = function (ev) {
         ev.stopPropagation();
-        const i = document.getElementById('keyInput');
-        i.type = i.type === 'password' ? 'text' : 'password';
+        var txt = ((state && state._logs) || []).map(function (l) {
+          return new Date(l.ts).toLocaleTimeString() + ' ' + l.level + ' ' + l.line;
+        }).join('\n');
+        copyText(txt, function () { cp.textContent = '✓'; setTimeout(function () { cp.textContent = L.copyLogs; }, 1200); });
       };
-      const ki = document.getElementById('keyInput');
-      ki.oninput = function () { keyDraft = ki.value; };
-      document.getElementById('saveKey').onclick = async function () {
-        await req('quota.setKey', { key: keyDraft });
-        keyDraft = '';
-        await refresh(false);
+      var cl = document.getElementById('clearLogs');
+      if (cl) cl.onclick = async function (ev) {
+        ev.stopPropagation();
+        try { await req('quota.clearLogs'); if (state) state._logs = []; render(); } catch (e) { /* ignore */ }
+      };
+
+      var ki = document.getElementById('keyInput');
+      if (ki) {
+        ki.oninput = function () { keyDraft = ki.value; };
+        document.getElementById('saveKey').onclick = async function () {
+          await req('quota.setKey', { key: keyDraft });
+          keyDraft = '';
+          await refresh(false);
+        };
+      }
+      var rk = document.getElementById('removeKey');
+      if (rk) rk.onclick = async function () {
+        var b = this; var old = b.textContent; b.disabled = true; b.textContent = '…';
+        try {
+          await req('quota.setKey', { key: '' });
+          keyDraft = ''; revealedKey = ''; pinSetup = false; pinAsk = false; hasPin = false;
+          if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
+          await refresh(false);
+        } catch (e) { b.textContent = old; b.disabled = false; }
+      };
+
+      var sk = document.getElementById('showKey');
+      if (sk) sk.onclick = function () {
+        pinErr = '';
+        if (!hasPin) { pinSetup = true; pinAsk = false; render(); return; }
+        pinAsk = true; pinSetup = false; render();
+      };
+
+      var sp = document.getElementById('savePin');
+      if (sp) sp.onclick = async function () {
+        var p1 = (document.getElementById('pin1') || {}).value || '';
+        var p2 = (document.getElementById('pin2') || {}).value || '';
+        if (!p1.trim()) { pinErr = L.pinRequired; render(); return; }
+        if (p1 !== p2) { pinErr = L.pinWrong; render(); return; }
+        try {
+          await req('quota.setPin', { pin: p1.trim() });
+          hasPin = true; pinSetup = false; pinAsk = false; pinErr = ''; render();
+        } catch (e) { pinErr = String(e); render(); }
+      };
+
+      var subPin = document.getElementById('submitPin');
+      if (subPin) subPin.onclick = async function () {
+        var pin = (document.getElementById('pinAsk') || {}).value || '';
+        try {
+          var r = await req('quota.revealKey', { pin: pin });
+          if (r && r.ok && r.key) {
+            revealedKey = r.key; pinAsk = false; pinErr = ''; render();
+            if (revealTimer) clearTimeout(revealTimer);
+            revealTimer = setTimeout(function () { revealedKey = ''; revealTimer = null; render(); }, 30000);
+          } else {
+            pinErr = (r && r.error === 'bad-pin') ? L.pinWrong : L.pinRequired; render();
+          }
+        } catch (e) { pinErr = String(e); render(); }
+      };
+
+      var cancelPin = document.getElementById('cancelPin');
+      if (cancelPin) cancelPin.onclick = function () { pinSetup = false; pinAsk = false; pinErr = ''; render(); };
+
+      var cpk = document.getElementById('copyKey');
+      if (cpk) cpk.onclick = function (ev) {
+        ev.stopPropagation();
+        copyText(revealedKey || '', function () { cpk.textContent = '✓'; setTimeout(function () { cpk.textContent = '📋'; }, 1200); });
+      };
+
+      var instBtn = document.getElementById('installSkillBtn');
+      if (instBtn) instBtn.onclick = async function () {
+        var b = this; var old = b.textContent; b.disabled = true; b.textContent = '…';
+        var st = document.getElementById('installStatus');
+        try {
+          var r = await req('quota.installSkill');
+          if (r && r.ok) {
+            b.textContent = L.installOk; b.classList.add('saved');
+            if (st) st.textContent = fmt(L.installPath, { path: r.path || '' });
+            if (state) state._installedPath = r.path || true;
+            setTimeout(function () { refresh(false); }, 1200);
+            return;
+          }
+          b.textContent = L.installFail;
+          if (st) st.textContent = (r && r.error) || '';
+        } catch (e) { b.textContent = L.installFail; if (st) st.textContent = String(e); }
+        setTimeout(function () { if (b) { b.textContent = old; b.disabled = false; } }, 2200);
+      };
+
+      var uBtn = document.getElementById('uninstallSkillBtn');
+      if (uBtn) uBtn.onclick = async function () {
+        var b = this; var old = b.textContent; b.disabled = true; b.textContent = '…';
+        var st = document.getElementById('installStatus');
+        try {
+          var r = await req('quota.uninstallSkill');
+          if (r && r.ok) { if (st) st.textContent = ''; await refresh(false); return; }
+          b.textContent = old;
+          if (st) st.textContent = (r && r.error) || '';
+        } catch (e) { b.textContent = old; if (st) st.textContent = String(e); }
+        setTimeout(function () { if (b) { b.textContent = old; b.disabled = false; } }, 2200);
+      };
+
+      // skill config — mark dirty on any field change
+      ['cfgCron','cfgMaxW','cfgRpm','cfgCap','cfgEffort','cfgTz','cfgWin'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) { el.oninput = updateSkillCfgDirty; el.onchange = updateSkillCfgDirty; }
+      });
+
+      document.getElementById('saveSkillConfig').onclick = async function () {
+        var b = this; var old = b.textContent; b.disabled = true;
+        var cfg = readSkillCfgForm();
+        try {
+          var r = await req('quota.setSkillConfig', { config: JSON.stringify(cfg, null, 2) });
+          b.textContent = (r && r.ok) ? (L.configSaved + (r.automationId ? ' · auto' : (r.automationError ? ' · ' + r.automationError : ''))) : L.configFail;
+          if (state) state._skillCfg = cfg;
+        } catch (e) { b.textContent = L.configFail; }
+        setTimeout(function () { if (b) { b.textContent = old; b.disabled = false; updateSkillCfgDirty(); } }, 1600);
       };
 
       bindTooltips();
     }
 
-    // Кастомные HTML/CSS тултипы с задержкой 200мс, позиционируются в пределах окна.
+    // Custom instant styled tooltips. Supports data-tip-mode (rich) and data-tip (plain text).
     var tipEl = document.getElementById('tipPop');
     var tipTimer = null;
     function hideTip() {
       if (tipTimer) { clearTimeout(tipTimer); tipTimer = null; }
-      if (tipEl) tipEl.classList.remove('show');
+      if (tipEl) { tipEl.classList.remove('show'); tipEl.style.display = 'none'; }
+    }
+    function esc(s) {
+      return String(s).replace(/[<>&]/g, function (c) { return { '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]; });
     }
     function showTip(target) {
       if (!tipEl) return;
       const m = target.getAttribute('data-tip-mode');
-      if (!m || !state) return;
-      tipEl.innerHTML = tipHtml(m);
+      const plain = target.getAttribute('data-tip');
+      if (m && state) tipEl.innerHTML = tipHtml(m);
+      else if (plain) tipEl.innerHTML = esc(plain);
+      else return;
       tipEl.style.display = 'block';
       tipEl.classList.add('show');
       const r = target.getBoundingClientRect();
@@ -799,8 +1274,8 @@
       tipEl.style.top = top + 'px';
     }
     function bindTooltips() {
-      document.querySelectorAll('[data-tip-mode]').forEach(function (el) {
-        el.onmouseenter = function () { if (tipTimer) clearTimeout(tipTimer); tipTimer = setTimeout(function () { showTip(el); }, 200); };
+      document.querySelectorAll('[data-tip-mode], [data-tip]').forEach(function (el) {
+        el.onmouseenter = function () { if (tipTimer) clearTimeout(tipTimer); showTip(el); };
         el.onmouseleave = hideTip;
       });
     }
@@ -808,6 +1283,7 @@
     orca.on('theme', function () { /* CSS vars update in place; nothing needed */ });
     refresh(false);
     setInterval(function () { refresh(false); }, 60000);
+    setInterval(function () { var el = document.getElementById('countdown'); if (el && state && state.resetAt) el.textContent = fmtCountdown(state.resetAt); }, 1000);
     }
 
     // Wait until the host injects window.orca, then boot.

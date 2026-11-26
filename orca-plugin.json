@@ -2,7 +2,7 @@
   "manifestVersion": 2,
   "id": "quota-panel",
   "name": "Quota Panel",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Monitor your free OpenRouter daily limit (requests per day, daily reset shown in your local time) with Turbo / Balance / Eco modes, editable thresholds and per-mode hints. Interface in English, Russian and Chinese.",
   "engines": {
     "orca": ">=1.4.246"

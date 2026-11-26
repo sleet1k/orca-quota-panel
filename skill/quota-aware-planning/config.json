@@ -1,0 +1,10 @@
+{
+  "cronMinutes": 30,
+  "maxWorkers": 5,
+  "perWorkerRpm": 4,
+  "rpmCap": 20,
+  "defaultEffort": "high",
+  "workWindowHours": null,
+  "timezone": null,
+  "_notes": "Free tier is ~20 requests/min per account (VERIFY). maxConcurrent = min(maxWorkers, floor(rpmCap/perWorkerRpm)). workWindowHours is set at session start. timezone=null means use the local timezone (reset is 00:00 UTC). cronMinutes documents the intended review cadence; if changed, recreate the automation."
+}
