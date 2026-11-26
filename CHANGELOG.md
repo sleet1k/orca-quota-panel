@@ -17,14 +17,15 @@ A large UX and capability release.
 - Instant styled tooltips for sections, inputs and info icons (replacing the slow native `title`).
 - Skill install now targets **all** bots (`~/.orca/bots/*/skills`) plus the OpenCode global mirror, exporting `key.txt` to each; uninstall removes from all.
 - A real Orca bot-automation ("Quota review") created from `cronMinutes` via the Orca CLI, surviving plugin restarts.
-- Collapsible "Skill config" with a compact 2×2 numeric grid and per-field hints (RU labels included).
+- Collapsible "Skill config" with a compact 2×2 numeric grid, localized labels (EN/RU/ZH), and per-field hints.
 - Version badge in the header (left, next to the title).
-- `CHANGELOG.md` (English) and `CHANGELOG.ru.md` (Russian).
+- `CHANGELOG.md` documenting releases in Keep a Changelog format.
 
 ### Changed
 - The progress bar now shows the **remaining** share of the quota (not the used share); threshold ticks are on the remaining scale.
 - Save buttons (thresholds, skill config) are highlighted only when there are unsaved changes.
 - Removed the duplicated per-mode effort/worker settings; those live only in the skill config. Adjacent threshold bounds stay linked without gaps.
+- Updated `README.md`, `README.ru.md`, and `README.zh.md` for v1.1.0 and refreshed dark-theme screenshots (`assets/preview-{en,ru,zh}.png`) to match the real Orca UI.
 - Plugin version bumped to 1.1.0.
 
 ### Fixed

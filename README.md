@@ -9,20 +9,28 @@ A right-sidebar panel for [Orca](https://orca.com) that keeps an eye on your fre
 
 ## What it does
 
-- **Remaining requests (rpd)** — shows `remaining / limit` for the current UTC day, with a
-  progress bar and the time until the daily reset (shown in **your local time**, no hard-coded
-  timezone).
-- **Three modes** — **Turbo**, **Balance** and **Eco**, plus **Auto** which picks a mode from the
-  thresholds. The active mode is computed from the remaining requests (or the manual mode you pick).
-- **Editable thresholds** — set the Turbo (`>`) and Eco (`<`) boundaries; the Balance range
-  (`min – max`) is editable too and stays in sync with them. Validation forbids `min >= max`.
-- **Per-mode hints** — each mode stores an *effort / workers / subagents* preset. These are kept as
-  metadata for agents and skills to read; the plugin does **not** switch models or agents itself —
-  the actual effort, model and worker count are chosen by the agent at launch.
-- **API key** — paste your OpenRouter key in the panel, or drop it in the skill's `key.txt`. The key
-  is always masked in the UI.
-- **Three languages** — English, Russian and Chinese, auto-detected from your locale with a one-click
-  switcher in the header (your choice is remembered).
+- **Remaining requests (rpd)** — shows `remaining / limit` for the current UTC day with a
+  remaining-quota progress bar, threshold ticks, and a live countdown to the 00:00 UTC reset
+  (hover to see the reset time in **your local timezone**).
+- **Three modes + Auto** — **Turbo**, **Balance**, and **Eco**, plus **Auto** which picks a mode
+  from your remaining quota thresholds. The header also shows the current version badge (`v1.1.0`).
+- **Settings modal (mode thresholds)** — click the gear icon in the header to edit the Turbo (`>`),
+  Eco (`<`), and Balance (`min – max`) boundaries. Adjacent bounds stay linked and validated
+  (`min < max`), and save buttons activate only when there are unsaved changes.
+- **API key with PIN reveal** — paste your OpenRouter key in the collapsible **API key** section
+  (or use `key.txt`). Keys are encrypted at rest (AES-256-GCM, machine-local derived key) and stay
+  hidden until revealed with a local PIN (stored only as a SHA-256 hash), with one-click copy and
+  automatic hiding after 30 s or on section collapse.
+- **Skill config (`config.json`)** — compact 2×2 numeric form (`cronMinutes`, `maxWorkers`,
+  `perWorkerRpm`, `rpmCap`) plus `defaultEffort`, `timezone`, and `workWindowHours`, with instant
+  styled tooltips. Saving creates or updates a `Quota review` Orca bot automation via the Orca CLI.
+- **Bundled `quota-aware-planning` skill** — one-click install to all Orca bots
+  (`~/.orca/bots/*/skills`) and the OpenCode global mirror (preserving existing config, key, and
+  mode files), with an `Installed` badge and one-click uninstall.
+- **Logs** — collapsible persistent log viewer with per-level coloring (`info` / `warn` / `error`),
+  Copy and Clear buttons, and auto-scroll.
+- **Three languages** — English, Russian, and Chinese, auto-detected from your locale with a
+  compact dropdown switcher in the header (persisted across restarts).
 
 ## Install
 
@@ -37,10 +45,12 @@ the **Quota Panel** appears in the right sidebar.
 
 ## Data & privacy
 
-- The API key is stored in the plugin's own storage (or read from `key.txt`) and is **never**
-  committed or shown in full.
-- Thresholds, per-mode hints and the language choice live in the plugin's storage and survive
-  restarts.
+- The API key is encrypted at rest (AES-256-GCM with a machine-local derived key) in the plugin's
+  own storage, exported to `key.txt` for the bash skill, and is **never** committed.
+- Key reveal is protected by a local PIN (only its SHA-256 hash is stored); a revealed key is
+  read-only and automatically hides after 30 seconds or when collapsing the section.
+- Thresholds, language choice, automation ID, and recent logs live in the plugin's storage and
+  survive restarts.
 
 ## Develop
 
@@ -51,7 +61,12 @@ orca plugin dev watch .       # load this folder into Orca with live reload (Ctr
 ```
 
 The panel is a single `src/panel.html` (HTML/CSS/JS, no build step). The worker is `src/worker.ts`;
-`src/protocol.ts` types the request contract between them. Orca transpiles the worker on load.
+`src/protocol.ts` types the request contract between them, and `skill/quota-aware-planning/` holds
+the bundled skill. Orca transpiles the worker on load.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
